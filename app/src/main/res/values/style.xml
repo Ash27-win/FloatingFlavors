@@ -1,0 +1,9 @@
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<resources></resources>-->
+
+<!-- res/values/styles.xml (or themes.xml) -->
+<resources>
+    <style name="Theme.FloatingFlavors" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Optional: status bar / nav bar colors etc later -->
+    </style>
+</resources>

@@ -1,0 +1,24 @@
+<!--<resources xmlns:tools="http://schemas.android.com/tools">-->
+<!--    &lt;!&ndash; Base application theme. &ndash;&gt;-->
+<!--    <style name="Base.Theme.FloatingFlavors" parent="Theme.Material3.DayNight.NoActionBar">-->
+<!--        &lt;!&ndash; Customize your light theme here. &ndash;&gt;-->
+<!--        &lt;!&ndash; <item name="colorPrimary">@color/my_light_primary</item> &ndash;&gt;-->
+<!--    </style>-->
+
+<!--    <style name="Theme.FloatingFlavors" parent="Base.Theme.FloatingFlavors" />-->
+<!--</resources>-->
+
+<resources>
+
+    <style name="Theme.FloatingFlavors" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- your colors etc -->
+    </style>
+
+    <!-- Splash theme -->
+    <style name="Theme.FloatingFlavors.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_floating_flavors</item>
+        <item name="postSplashScreenTheme">@style/Theme.FloatingFlavors</item>
+    </style>
+
+</resources>
