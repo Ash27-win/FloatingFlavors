@@ -12,4 +12,7 @@ sealed class Screen(val route: String) {
     // Role based destinations
     data object UserHome : Screen("user_home")
     data object AdminHome : Screen("admin_home")
+
+    object AdminAddFood : Screen("admin_add_food")
+    object UserMenu : Screen("user_menu")
 }

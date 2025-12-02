@@ -61,5 +61,20 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.material.icons.extended)
 
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+// OkHttp (optional but good)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+// Coroutines (for ViewModel)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+// Lifecycle ViewModel (for Compose)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+
+    // Coil for image loading (REQUIRED)
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
 
 }

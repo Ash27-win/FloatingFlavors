@@ -9,7 +9,9 @@ import com.example.floatingflavors.app.feature.auth.presentation.onboarding.Onbo
 import com.example.floatingflavors.app.feature.auth.presentation.splash.SplashScreen
 import com.example.floatingflavors.app.feature.user.presentation.home.UserHomeScreen
 import com.example.floatingflavors.app.feature.admin.presentation.home.AdminHomeScreen
+import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminAddFoodScreen
 import com.example.floatingflavors.app.feature.auth.presentation.register.RegisterScreen
+import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuScreen
 
 @Composable
 fun AppNavHost(navController: NavHostController) {
@@ -43,7 +45,7 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.Login.route) {
             LoginScreen(
                 onBackClick = { navController.popBackStack() },
-                onLoginSuccess = { role ->          // 👈 change this name
+                onLoginClick = { role ->          // 👈 change this name
                     when (role) {
                         "User" -> {
                             navController.navigate(Screen.UserHome.route) {
@@ -79,9 +81,29 @@ fun AppNavHost(navController: NavHostController) {
             UserHomeScreen()
         }
 
-        // Admin Home
+        // Admin Home (pass navController)
         composable(Screen.AdminHome.route) {
-            AdminHomeScreen()
+            AdminHomeScreen(navController = navController, onLogout = {
+                // optional: navigate back to login
+                navController.popBackStack(Screen.Login.route, inclusive = false)
+                navController.navigate(Screen.Login.route)
+            })
+        }
+
+// Admin Add Food (ensure this composable exists)
+        composable(Screen.AdminAddFood.route) {
+            AdminAddFoodScreen(
+                onBackClick = { navController.popBackStack() },
+                onAdded = {
+                    // Optionally show a snackbar or navigate back:
+                    navController.popBackStack(Screen.AdminAddFood.route, inclusive = true)
+                    // or simply navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.UserMenu.route) {
+            UserMenuScreen()
         }
     }
 }
