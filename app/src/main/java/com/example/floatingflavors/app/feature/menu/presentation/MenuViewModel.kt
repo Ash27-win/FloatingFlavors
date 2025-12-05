@@ -21,7 +21,7 @@ class MenuViewModel : ViewModel() {
         private set
 
     var menuItems by mutableStateOf<List<MenuItemDto>>(emptyList())
-        private set
+//        private set
 
     // Public helper to set error from UI/validation
     fun setError(message: String?) {
