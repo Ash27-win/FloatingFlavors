@@ -1,7 +1,7 @@
 package com.example.floatingflavors.app.feature.menu.data
 
 import com.example.floatingflavors.app.core.network.NetworkClient
-import com.example.floatingflavors.app.feature.menu.data.remote.AddMenuItemRequest
+//import com.example.floatingflavors.app.feature.menu.data.remote.AddMenuItemRequest
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuResponseDto
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.SimpleResponseDto
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -50,4 +50,13 @@ class MenuRepository {
 
         return api.addMenuItemWithImage(nameRb, descRb, priceRb, catRb, availRb, imagePart)
     }
+
+    suspend fun deleteMenuItem(id: Int): SimpleResponseDto {
+        return api.deleteMenuItem(id) // define in MenuApi as @FormUrlEncoded @POST("delete_menu_item.php") suspend fun deleteMenuItem(@Field("id") id:Int): SimpleResponseDto
+    }
+
+    suspend fun updateMenuAvailability(id: Int, isAvailable: Int): SimpleResponseDto {
+        return api.updateMenuAvailability(id, isAvailable) // define endpoint accordingly
+    }
+
 }

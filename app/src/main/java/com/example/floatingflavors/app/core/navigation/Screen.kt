@@ -1,18 +1,25 @@
 package com.example.floatingflavors.app.core.navigation
 
-// core/navigation/Screen.kt
-
 sealed class Screen(val route: String) {
-    data object Splash : Screen("splash")
-    data object Onboarding : Screen("onboarding")
+    object Splash : Screen("splash")
+    object Onboarding : Screen("onboarding")
+    object Login : Screen("login")
+    object Register : Screen("register")
 
-    data object Login : Screen("login")
+    // Root containers
+    object AdminRoot : Screen("admin_root")
+    object UserRoot : Screen("user_root")
 
-    data object Register : Screen("register")
-    // Role based destinations
-    data object UserHome : Screen("user_home")
-    data object AdminHome : Screen("admin_home")
-
+    // Admin inner screens
+    object AdminDashboard : Screen("admin_dashboard")
+    object AdminOrders : Screen("admin_orders")                 // <-- new
+    object AdminMenuInventory : Screen("admin_menu_inventory")
     object AdminAddFood : Screen("admin_add_food")
-    object UserMenu : Screen("user_menu")
+    object AdminNotifications : Screen("admin_notifications")   // <-- new
+    object AdminProfile : Screen("admin_profile")               // <-- new
+
+    // User inner screens
+    object UserHome : Screen("user_home")
+    object UserMenuGrid : Screen("user_menu_grid")
+    object UserProfile : Screen("user_profile")
 }

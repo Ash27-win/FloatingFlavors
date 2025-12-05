@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/example/floatingflavors/app/feature/menu/presentation/MenuViewModel.kt
 package com.example.floatingflavors.app.feature.menu.presentation
 
 import androidx.compose.runtime.getValue
@@ -17,11 +16,21 @@ class MenuViewModel : ViewModel() {
     var isLoading by mutableStateOf(false)
         private set
 
+    // Expose errorMessage as public read-only property (UI can read it)
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
     var menuItems by mutableStateOf<List<MenuItemDto>>(emptyList())
         private set
+
+    // Public helper to set error from UI/validation
+    fun setError(message: String?) {
+        errorMessage = message
+    }
+
+    fun clearError() {
+        errorMessage = null
+    }
 
     fun loadMenu() {
         isLoading = true
@@ -42,10 +51,6 @@ class MenuViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Add menu item without image (uses the same multipart endpoint under the hood with null file).
-     * Keeps your UI code simple: call addMenuItem(...) when there's no image file.
-     */
     fun addMenuItem(
         name: String,
         description: String,
@@ -53,14 +58,9 @@ class MenuViewModel : ViewModel() {
         category: String,
         onSuccess: () -> Unit
     ) {
-        // delegate to multipart upload method with null file
         addMenuItemWithImage(name, description, price, category, null, onSuccess)
     }
 
-    /**
-     * Add menu item with optional image file.
-     * imageFile can be null — repository will handle nullable file and call the multipart endpoint accordingly.
-     */
     fun addMenuItemWithImage(
         name: String,
         description: String,
@@ -89,6 +89,44 @@ class MenuViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 errorMessage = "Failed to add item: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun deleteMenuItem(id: Int) {
+        viewModelScope.launch {
+            try {
+                isLoading = true
+                errorMessage = null
+                val resp = repository.deleteMenuItem(id)
+                if (resp.success) {
+                    loadMenu()
+                } else {
+                    errorMessage = resp.message
+                }
+            } catch (e: Exception) {
+                errorMessage = "Delete failed: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun toggleAvailability(id: Int, isAvailable: Int) {
+        viewModelScope.launch {
+            try {
+                isLoading = true
+                errorMessage = null
+                val resp = repository.updateMenuAvailability(id, isAvailable)
+                if (resp.success) {
+                    loadMenu()
+                } else {
+                    errorMessage = resp.message
+                }
+            } catch (e: Exception) {
+                errorMessage = "Update failed: ${e.message}"
             } finally {
                 isLoading = false
             }

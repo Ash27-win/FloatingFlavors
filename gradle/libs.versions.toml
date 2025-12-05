@@ -13,9 +13,16 @@ constraintlayout = "2.2.1"
 activityCompose = "1.12.0"
 navigationCompose = "2.9.6"
 coreSplashscreen = "1.2.0"
-composeUi = "1.9.5"
-composeMaterial3 = "1.4.0"
-materialIconsExtended = "1.7.8"
+composeUi = "1.7.5"
+composeMaterial3 = "1.2.1"
+materialIconsExtended = "1.7.5"
+material3 = "1.4.0"
+foundation = "1.9.5"
+
+#composeUi = "1.9.5"
+#composeMaterial3 = "1.4.0"
+#materialIconsExtended = "1.7.8"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +41,14 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "composeUi" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "composeUi" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+
+#androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }
+#androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial3" }
+#androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "composeUi" }
+#androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "composeUi" }
+#androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

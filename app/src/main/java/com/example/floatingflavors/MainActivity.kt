@@ -27,6 +27,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
 import com.example.floatingflavors.app.core.navigation.AppNavHost
+import com.example.floatingflavors.app.core.navigation.AppShell
+import com.example.floatingflavors.app.core.navigation.Screen
 import com.example.floatingflavors.app.core.ui.theme.FloatingFlavorsTheme
 
 class MainActivity : ComponentActivity() {
@@ -41,7 +43,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun FloatingFlavorsApp() {
     FloatingFlavorsTheme {
-        val navController = rememberNavController()
-        AppNavHost(navController = navController)
+        AppNavHost() // root flow: Splash -> Onboarding -> Login -> AdminRoot/UserRoot
     }
 }
+
+
+
+
+//@Composable
+//fun FloatingFlavorsApp() {
+//    FloatingFlavorsTheme {
+//        val navController = rememberNavController()
+//        AppNavHost(navController = navController,)
+//    }
+//}
