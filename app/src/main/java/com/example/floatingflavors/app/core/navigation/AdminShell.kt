@@ -20,6 +20,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.floatingflavors.app.feature.admin.presentation.dashboard.AdminDashboardScreen
 import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminMenuInventoryScreen
 import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminAddFoodScreen
+import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminEditFoodScreen
+
+// IMPORT: real Admin Orders screen (replace placeholder)
+import com.example.floatingflavors.app.feature.admin.presentation.orders.AdminOrdersScreen
 
 @Composable
 fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
@@ -70,8 +74,8 @@ fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
         NavHost(navController = navController, startDestination = startRoute, modifier = Modifier.padding(innerPadding)) {
             composable(Screen.AdminDashboard.route) { AdminDashboardScreen() }
 
-            // Orders placeholder — replace with your real AdminOrders screen later
-            composable(Screen.AdminOrders.route) { AdminOrdersScreenPlaceholder() }
+            // Use the real AdminOrdersScreen (replaces placeholder)
+            composable(Screen.AdminOrders.route) { AdminOrdersScreen() }
 
             // Menu + Inventory (your existing screen). It expects navController for add/edit navigation.
             composable(Screen.AdminMenuInventory.route) { AdminMenuInventoryScreen(navController = navController) }
@@ -79,25 +83,26 @@ fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
             // Add Food can be a separate route (we will navigate to it from Menu via FAB)
             composable(Screen.AdminAddFood.route) { AdminAddFoodScreen(navController = navController) }
 
-            // Notifications placeholder
+            composable("admin_edit_food/{id}") { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
+                AdminEditFoodScreen(
+                    navController = navController,
+                    itemId = id
+                )
+            }
+
+            // Notifications route
             composable(Screen.AdminNotifications.route) { AdminNotificationsPlaceholder() }
 
-            // Profile placeholder — you might already have AdminProfileScreen; swap if you do
+            // Profile route
             composable(Screen.AdminProfile.route) { AdminProfilePlaceholder() }
         }
     }
 }
 
 /** Small lightweight placeholders so the app won't crash if you don't have these screens yet.
- * Replace these with your real implementations (AdminOrdersScreen, AdminNotificationsScreen, AdminProfileScreen).
+ * Replace these with your real implementations (AdminNotificationsScreen, AdminProfileScreen) when ready.
  */
-@Composable
-private fun AdminOrdersScreenPlaceholder() {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Text("Admin Orders (placeholder)", modifier = Modifier.padding(16.dp))
-    }
-}
-
 @Composable
 private fun AdminNotificationsPlaceholder() {
     Surface(modifier = Modifier.fillMaxSize()) {

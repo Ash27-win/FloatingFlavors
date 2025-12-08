@@ -1,7 +1,6 @@
 package com.example.floatingflavors.app.feature.menu.data
 
 import com.example.floatingflavors.app.core.network.NetworkClient
-//import com.example.floatingflavors.app.feature.menu.data.remote.AddMenuItemRequest
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuResponseDto
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.SimpleResponseDto
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -14,20 +13,10 @@ import java.io.File
 class MenuRepository {
     private val api = NetworkClient.menuApi
 
+    // GET list
     suspend fun getMenu(): MenuResponseDto = api.getMenu()
 
-//    suspend fun addMenuItem(
-//        name: String,
-//        description: String,
-//        price: Double,
-//        category: String,
-//        imageUrl: String
-//    ): SimpleResponseDto {
-//        val body = AddMenuItemRequest(name, description, price, category, imageUrl, 1)
-//        return api.addMenuItem(body)
-//    }
-
-    // upload with image file (File can be null)
+    // ADD (with optional image)
     suspend fun addMenuItemWithImage(
         name: String,
         description: String,
@@ -51,12 +40,50 @@ class MenuRepository {
         return api.addMenuItemWithImage(nameRb, descRb, priceRb, catRb, availRb, imagePart)
     }
 
+    // EDIT / UPDATE (with optional image)
+    suspend fun updateMenuItemWithImage(
+        id: Int,
+        name: String?,
+        description: String?,
+        price: Double?,
+        category: String?,
+        isAvailable: Int?,
+        imageFile: File? = null
+    ): SimpleResponseDto {
+        // helper to convert string -> RequestBody
+        fun String.toRb(): RequestBody = this.toRequestBody("text/plain".toMediaTypeOrNull())
+
+        val idRb = id.toString().toRb()
+        val nameRb = name?.toRb()
+        val descRb = description?.toRb()
+        val priceRb = price?.toString()?.toRb()
+        val catRb = category?.toRb()
+        val availRb = isAvailable?.toString()?.toRb()
+
+        val imagePart: MultipartBody.Part? = imageFile?.let { file ->
+            val mime = "image/*".toMediaTypeOrNull()
+            val reqFile = file.asRequestBody(mime)
+            MultipartBody.Part.createFormData("image", file.name, reqFile)
+        }
+
+        return api.updateMenuItemWithImage(
+            id = idRb,
+            name = nameRb,
+            description = descRb,
+            price = priceRb,
+            category = catRb,
+            isAvailable = availRb,
+            image = imagePart
+        )
+    }
+
+    // DELETE
     suspend fun deleteMenuItem(id: Int): SimpleResponseDto {
-        return api.deleteMenuItem(id) // define in MenuApi as @FormUrlEncoded @POST("delete_menu_item.php") suspend fun deleteMenuItem(@Field("id") id:Int): SimpleResponseDto
+        return api.deleteMenuItem(id)
     }
 
+    // TOGGLE / UPDATE AVAILABILITY
     suspend fun updateMenuAvailability(id: Int, isAvailable: Int): SimpleResponseDto {
-        return api.updateMenuAvailability(id, isAvailable) // define endpoint accordingly
+        return api.updateMenuAvailability(id, isAvailable)
     }
-
 }

@@ -15,6 +15,10 @@ sealed class Screen(val route: String) {
     object AdminOrders : Screen("admin_orders")                 // <-- new
     object AdminMenuInventory : Screen("admin_menu_inventory")
     object AdminAddFood : Screen("admin_add_food")
+    object AdminEditFood : Screen("admin_edit_food/{id}") {
+        // helper to build concrete route
+        fun createRoute(id: String) = "admin_edit_food/$id"
+    }
     object AdminNotifications : Screen("admin_notifications")   // <-- new
     object AdminProfile : Screen("admin_profile")               // <-- new
 

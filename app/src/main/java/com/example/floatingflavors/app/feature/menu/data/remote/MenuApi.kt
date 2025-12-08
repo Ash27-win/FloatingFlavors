@@ -46,9 +46,12 @@ import okhttp3.RequestBody
 import retrofit2.http.*
 
 interface MenuApi {
+
+    // GET all menu items
     @GET("get_menu.php")
     suspend fun getMenu(): MenuResponseDto
 
+    // Add new menu item with optional image (multipart/form-data)
     @Multipart
     @POST("add_menu_item.php")
     suspend fun addMenuItemWithImage(
@@ -57,14 +60,33 @@ interface MenuApi {
         @Part("price") price: RequestBody,
         @Part("category") category: RequestBody,
         @Part("is_available") isAvailable: RequestBody,
-        @Part image: MultipartBody.Part?
+        @Part image: MultipartBody.Part? // optional
     ): SimpleResponseDto
 
+    // Update existing menu item (multipart/form-data). Image optional.
+    @Multipart
+    @POST("update_menu_item.php")
+    suspend fun updateMenuItemWithImage(
+        @Part("id") id: RequestBody,
+        @Part("name") name: RequestBody?,
+        @Part("description") description: RequestBody?,
+        @Part("price") price: RequestBody?,
+        @Part("category") category: RequestBody?,
+        @Part("is_available") isAvailable: RequestBody?, // use this form name; Kotlin param is isAvailable
+        @Part image: MultipartBody.Part? // optional
+    ): SimpleResponseDto
+
+    // Delete menu item (form-urlencoded)
     @FormUrlEncoded
     @POST("delete_menu_item.php")
     suspend fun deleteMenuItem(@Field("id") id: Int): SimpleResponseDto
 
+    // Toggle / update availability (form-urlencoded)
     @FormUrlEncoded
     @POST("update_menu_availability.php")
-    suspend fun updateMenuAvailability(@Field("id") id: Int, @Field("is_available") isAvailable: Int): SimpleResponseDto
+    suspend fun updateMenuAvailability(
+        @Field("id") id: Int,
+        @Field("is_available") isAvailable: Int
+    ): SimpleResponseDto
 }
+

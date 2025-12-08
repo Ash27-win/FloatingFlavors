@@ -40,7 +40,7 @@ import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import com.example.floatingflavors.app.feature.menu.presentation.MenuViewModel
 
 /**
- * Admin Menu & Inventory - Final Figma Design Implementation
+ * Admin Menu & Inventory - Final Figma Design Implementation (Tabs not scrollable)
  */
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,36 +160,35 @@ fun AdminMenuInventoryScreen(
                 }
             }
 
-            // --- 5. Category Tabs (White selected indicator with rounded corners) ---
+            // --- 5. Category Tabs (Pill style indicator on gray background - NOW FIXED, NOT SCROLLABLE) ---
             item {
-                // Outer Column for horizontal padding
-                Column(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                // Outer Box to provide the light gray background for the entire tabs area
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .background(Color(0xFFE0E0E0), RoundedCornerShape(12.dp)) // Light Gray Background for the whole section
                 ) {
+                    // CHANGED FROM ScrollableTabRow to standard TabRow
                     TabRow(
                         selectedTabIndex = selectedTabIndex,
-                        containerColor = Color.Transparent,
-                        // Set fixed height for the TabRow to properly constrain the indicator
+                        containerColor = Color.Transparent, // Transparent to show Box background
                         modifier = Modifier.height(48.dp),
+                        divider = {},
+                        // Custom Indicator: White, rounded Box behind the selected tab
                         indicator = { tabPositions ->
                             if (selectedTabIndex < tabPositions.size) {
-                                // Custom indicator: White, rounded Box behind the text
                                 Box(
                                     Modifier
                                         .tabIndicatorOffset(tabPositions[selectedTabIndex])
                                         .fillMaxHeight()
-                                        .padding(vertical = 4.dp) // Adjust vertical padding to control height of the white box
-                                        .padding(horizontal = 8.dp) // Adjust internal horizontal padding
-                                        .clip(RoundedCornerShape(12.dp)) // Rounded corners for the white background
-                                        .background(Color.White) // White background color
+                                        .padding(4.dp) // Padding controls the space around the white pill
+                                        .padding(horizontal = 2.dp) // Removed extra horizontal padding to spread tabs evenly
+                                        .clip(RoundedCornerShape(10.dp)) // Rounded corners for the white background
+                                        .background(Color.White) // White background color for the selected tab
                                         .zIndex(-1f) // Push the background behind the text
                                 )
                             }
-                        },
-                        divider = {
-                            // Gray horizontal line beneath the tabs
-                            Divider(color = Color.LightGray, thickness = 1.dp)
                         }
                     ) {
                         tabs.forEachIndexed { index, title ->
@@ -200,12 +199,12 @@ fun AdminMenuInventoryScreen(
                                 text = {
                                     Text(
                                         title,
-                                        color = if (isSelected) Color(0xFF00A651) else Color.Gray,
+                                        color = if (isSelected) Color.Black else Color.Gray,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         fontSize = 14.sp
                                     )
                                 },
-                                selectedContentColor = Color(0xFF00A651),
+                                selectedContentColor = Color.Black,
                                 unselectedContentColor = Color.Gray
                             )
                         }
@@ -237,7 +236,11 @@ fun AdminMenuInventoryScreen(
                     // Apply horizontal padding here for the list items
                     AdminMenuItemCard(
                         item = item,
-                        onEdit = { Log.d("AdminMenuInventory", "Edit clicked id=${item.id}") },
+                        onEdit = {
+                            val idStr = item.id ?: return@AdminMenuItemCard
+                            navController.navigate("admin_edit_food/$idStr")
+                        },
+
                         onDelete = {
                             val idInt = item.id?.toIntOrNull()
                             if (idInt != null) { vm.deleteMenuItem(idInt) }
@@ -383,7 +386,6 @@ fun AdminMenuItemCard(
         }
     }
 }
-
 
 
 //package com.example.floatingflavors.app.feature.admin.presentation.menu

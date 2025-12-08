@@ -3,6 +3,7 @@ package com.example.floatingflavors.app.core.network
 
 import com.example.floatingflavors.app.feature.auth.data.remote.AuthApi
 import com.example.floatingflavors.app.feature.menu.data.remote.MenuApi // NEW
+import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -23,7 +24,7 @@ object NetworkClient {
         .addInterceptor(logging)
         .build()
 
-    private val retrofit: Retrofit = Retrofit.Builder()
+    val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(httpClient)
         .addConverterFactory(GsonConverterFactory.create())
@@ -33,4 +34,7 @@ object NetworkClient {
 
     // === NEW: Menu API for menu endpoints ===
     val menuApi: MenuApi = retrofit.create(MenuApi::class.java)
+
+    // === NEW: Orders API ===
+    val ordersApi: OrdersApi = retrofit.create(OrdersApi::class.java)
 }
