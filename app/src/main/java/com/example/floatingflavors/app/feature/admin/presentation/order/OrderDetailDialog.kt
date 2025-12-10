@@ -41,7 +41,7 @@ fun OrderDetailDialog(
             Card(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .widthIn(max = 360.dp)
+                    .fillMaxWidth(0.90f)    // 90% of screen width
                     .padding(12.dp),
                 shape = MaterialTheme.shapes.large,
                 elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)

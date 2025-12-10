@@ -11,7 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.floatingflavors.app.feature.admin.presentation.order.OrderDetailDialog
@@ -23,17 +25,37 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- * Admin Orders screen — explicit typing to avoid Kotlin inference issues.
- * Replace your existing AdminOrdersScreen.kt with this file (overwrite).
- */
-
-// make TabLabel public so it can appear in public composable signatures
+// Make TabLabel public so it can be used in public signatures
 data class TabLabel(val title: String, val count: Int)
 
+/** Compact search bar used under the header */
+@Composable
+fun OrdersSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Search orders…") },
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 44.dp),
+        singleLine = true,
+        shape = MaterialTheme.shapes.large
+    )
+}
+
+/**
+ * Admin Orders screen (responsive, no top gap above header).
+ *
+ * Overwrite your existing AdminOrdersScreen.kt with this file.
+ * After pasting, Build -> Clean Project -> Rebuild.
+ */
 @Composable
 fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
-    // ViewModel state
+    // VM state
     val orders by vm.orders.collectAsState()
     val filteredOrders by vm.filteredOrders.collectAsState()
     val isLoading by vm.isLoading.collectAsState()
@@ -50,9 +72,7 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
     val coroutineScope = rememberCoroutineScope()
 
     // initial load
-    LaunchedEffect(Unit) {
-        vm.loadOrders()
-    }
+    LaunchedEffect(Unit) { vm.loadOrders() }
 
     // update liveTimes on orders change
     LaunchedEffect(orders) {
@@ -75,7 +95,7 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
         }
     }
 
-    // Build explicit TabLabel list (explicit type, no Pair usage)
+    // Build explicit TabLabel list
     val labels: List<TabLabel> = listOf(
         TabLabel("All", counts["all"] ?: 0),
         TabLabel("Pending", counts["pending"] ?: 0),
@@ -83,17 +103,31 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
         TabLabel("Completed", counts["completed"] ?: 0)
     )
 
-    Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { padding ->
+    // We will explicitly handle Scaffold content padding so the top gap is removed.
+    // Get layout direction to calculate start/end paddings correctly.
+    val layoutDirection = LocalLayoutDirection.current
+
+    Scaffold(
+        // IMPORTANT: Do not provide topBar — this avoids default overflow icon/dots.
+        topBar = {},
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { innerPadding ->
+        // innerPadding may include system insets; we intentionally drop top inset to remove top-gap.
+        val startPad = innerPadding.calculateStartPadding(layoutDirection)
+        val endPad = innerPadding.calculateEndPadding(layoutDirection)
+        val bottomPad = innerPadding.calculateBottomPadding()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                // apply only horizontal + bottom padding from scaffold; intentionally skip top padding
+                .padding(start = startPad, end = endPad, bottom = bottomPad)
         ) {
-            // Header area
+            // Header (blue) — use heightIn so it adapts on different screen sizes
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp)
+                    .heightIn(min = 96.dp, max = 140.dp) // responsive header height
                     .background(brush = Brush.horizontalGradient(colors = listOf(Color(0xFF2563EB), Color(0xFF3B82F6))))
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
@@ -106,23 +140,38 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Manage and track all orders",
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = Color.White.copy(alpha = 0.95f),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
-            // Tabs with badges (uses explicit labels list)
+            // small gap below header
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Search bar (compact)
+            OrdersSearchBar(
+                query = searchQuery,
+                onQueryChange = { vm.setSearchQuery(it) },
+                modifier = Modifier
+                    .padding(horizontal = 12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Tabs with badges
             OrderTabsWithBadges(
                 selected = selectedTabState,
                 labels = labels,
                 onTabChange = { idx ->
                     vm.setSelectedTab(idx)
-                    // optional: clear search when switching
+                    // optional: clear search on tab change
                     vm.setSearchQuery("")
                 },
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Body: list / loading / error
             when {
@@ -173,7 +222,7 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                 }
             }
 
-            // show dialog when selectedOrder available
+            // selected order dialog (centered, full scrim handled in dialog)
             if (selectedOrder != null) {
                 OrderDetailDialog(
                     order = selectedOrder!!,
@@ -212,6 +261,7 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
     }
 }
 
+/** Tabs with badges using explicit labelled list */
 @Composable
 fun OrderTabsWithBadges(
     selected: Int,
@@ -264,6 +314,7 @@ fun OrderTabsWithBadges(
         }
     }
 }
+
 
 
 

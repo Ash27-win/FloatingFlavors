@@ -15,9 +15,9 @@ import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
 fun OrderListCard(
     order: OrderDto,
     timeText: String,
-    onStatusChange: (orderId: String, newStatus: String) -> Unit
+    onStatusChange: (orderId: String, newStatus: String) -> Unit // Kept for compatibility but unused
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
+    // var menuExpanded by remember { mutableStateOf(false) } // Removed state
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -45,9 +45,12 @@ fun OrderListCard(
                     )
                 }
 
+                // Only StatusChip remains in the right header section
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StatusChip(order.status ?: "pending")
 
+                    // --- REMOVED DROPDOWN MENU AND ICON BUTTON ---
+                    /*
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Actions")
                     }
@@ -66,6 +69,7 @@ fun OrderListCard(
                             onStatusChange(order.id ?: "", "completed")
                         })
                     }
+                    */
                 }
             }
 
