@@ -3,7 +3,7 @@ package com.example.floatingflavors.app.core.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.RestaurantMenu
-import androidx.compose.material.icons.filled.Notifications
+// Removed unused import: import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,7 +14,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.floatingflavors.app.feature.user.presentation.home.UserHomeScreen
+import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
+// --- FIX: ADDED MISSING IMPORTS ---
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
 
 @Composable
