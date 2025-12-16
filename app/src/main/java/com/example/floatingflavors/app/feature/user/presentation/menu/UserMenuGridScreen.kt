@@ -1,102 +1,324 @@
 package com.example.floatingflavors.app.feature.user.presentation.menu
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.floatingflavors.app.feature.menu.presentation.MenuViewModel
-import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import com.example.floatingflavors.app.core.network.NetworkClient
-import android.util.Log
-
-// helper to resolve image URL
-private fun resolvedImageUrl(item: MenuItemDto, fallbackBase: String): String? {
-    item.image_full?.takeIf { it.isNotBlank() }?.let { return it }
-
-    val rel = item.image_url?.trim()?.takeIf { it.isNotBlank() } ?: return null
-
-    // if absolute already:
-    if (rel.startsWith("http://", true) || rel.startsWith("https://", true)) {
-        // if it uses localhost or 127.0.0.1, replace host with fallbackBase host
-        if (rel.contains("://localhost") || rel.contains("://127.0.0.1")) {
-            // crude: get path after host
-            val path = rel.substringAfter("://").substringAfter('/')
-            return fallbackBase.trimEnd('/') + "/" + path
-        }
-        return rel
-    }
-
-    // else relative path -> fallback base + rel
-    return fallbackBase.trimEnd('/') + "/" + rel.trimStart('/')
-}
+import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
+import com.example.floatingflavors.app.feature.menu.presentation.MenuViewModel
+import com.example.floatingflavors.app.feature.user.data.cart.dto.CartItemDto
+import com.example.floatingflavors.app.feature.user.presentation.menu.cart.*
+import com.example.floatingflavors.app.feature.user.presentation.menu.checkout.CheckoutBottomSheet
+import com.example.floatingflavors.app.feature.user.presentation.order.OrderSuccessScreen
 
 @Composable
-fun UserMenuGridScreen(vm: MenuViewModel = viewModel(), onItemClick: (MenuItemDto) -> Unit = {}) {
-    val items by remember { derivedStateOf { vm.menuItems } }
-    val isLoading by remember { derivedStateOf { vm.isLoading } }
-    val error by remember { derivedStateOf { vm.errorMessage } }
+fun UserMenuGridScreen(
+    menuVm: MenuViewModel = viewModel(),
+    cartVm: CartViewModel = viewModel(),
+    onItemClick: (MenuItemDto) -> Unit = {}
+) {
+    // 🔥 TEMP USER ID (SessionManager removed ONLY)
+    val userId = 1
 
-    // load menu on enter
-    LaunchedEffect(Unit) { vm.loadMenu() }
+    val cartState by cartVm.uiState.collectAsState()
+    val cartItems: List<CartItemDto> =
+        (cartState as? CartUiState.Success)?.items ?: emptyList<CartItemDto>()
+    val cartBadgeCount = cartItems.sumOf { it.quantity }
 
-    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-        Text("Our Menu", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(8.dp))
+    var showCart by remember { mutableStateOf(false) }
+    var showCheckout by remember { mutableStateOf(false) }
+    var showOrderSuccess by remember { mutableStateOf(false) }
 
-        when {
-            isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            !error.isNullOrEmpty() -> {
-                Text(error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
-            }
-            items.isEmpty() -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No menu items available")
+    LaunchedEffect(Unit) {
+        menuVm.loadMenu()
+        cartVm.loadCart(userId)
+    }
+
+    Box(Modifier.fillMaxSize()) {
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0xFFEBEBEB))
+        ) {
+
+            /* ---------- TOP BAR ---------- */
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Menu", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("Browse our delicious offerings", fontSize = 13.sp, color = Color.Gray)
                 }
-            }
-            else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(items) { item ->
-                        val imageUrl = resolvedImageUrl(item, NetworkClient.BASE_URL)
-                        Log.d("IMG", "resolved url = $imageUrl")
-                        Card(modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clickable { onItemClick(item) }) {
-                            Column {
-                                AsyncImage(
-                                    model = imageUrl,
-                                    contentDescription = item.name,
-                                    modifier = Modifier.fillMaxWidth().height(110.dp)
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Text(item.name ?: "-", modifier = Modifier.padding(horizontal = 8.dp))
-                                Text("₹ ${item.price ?: "-"}", modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
-                            }
+
+                Box(Modifier.clickable { showCart = true }) {
+                    Icon(Icons.Default.ShoppingCart, null, Modifier.size(28.dp))
+
+                    if (cartBadgeCount > 0) {
+                        Box(
+                            Modifier
+                                .size(18.dp)
+                                .align(Alignment.TopEnd)
+                                .offset(6.dp, (-6).dp)
+                                .background(Color(0xFF00C853), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                cartBadgeCount.toString(),
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
             }
+
+            /* ---------- SEARCH ---------- */
+            Row(
+                Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Search, null, tint = Color.Gray, modifier = Modifier.padding(12.dp))
+                Text("Search for dishes...", color = Color.Gray)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            /* ---------- GRID ---------- */
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(menuVm.menuItems) { menuItem ->
+
+                    // 🔑 FINAL FIX: convert String? → Int ONCE
+                    val menuId = menuItem.id?.toIntOrNull() ?: return@items
+
+                    val cartItem = cartItems.firstOrNull { cart ->
+                        cart.menuItemId == menuId
+                    }
+
+                    val quantity = cartItem?.quantity ?: 0
+
+                    MenuGridCard(
+                        item = menuItem,
+                        quantity = quantity,
+                        onAdd = {
+                            cartVm.add(
+                                userId = userId,
+                                menuId = menuId,          // ✅ Int
+                                price = menuItem.price
+                                    ?.toString()
+                                    ?.toDoubleOrNull()
+                                    ?.toInt()
+                                    ?: 0
+                            )
+                        },
+                        onIncrease = {
+                            cartItem?.let {
+                                cartVm.increase(userId, it.cartItemId)
+                            }
+                        },
+                        onDecrease = {
+                            cartItem?.let {
+                                if (it.quantity > 1)
+                                    cartVm.decrease(userId, it.cartItemId)
+                                else
+                                    cartVm.remove(userId, it.cartItemId)
+                            }
+                        },
+                        onClick = { onItemClick(menuItem) }
+                    )
+                }
+            }
+        }
+
+        /* ---------- CART ---------- */
+        /* ---------- CART ---------- */
+        if (showCart && cartItems.isNotEmpty()) {
+
+            val state = cartState as CartUiState.Success
+
+            UserCartBottomSheet(
+                items = state.items.map { item ->
+                    CartItemUi(
+                        cartItemId = item.cartItemId,
+                        name = item.name,
+                        price = item.price,
+                        quantity = item.quantity
+                    )
+                },
+                totalAmount = state.total,
+                onDismiss = { showCart = false },
+                onIncrease = { cartVm.increase(userId, it.cartItemId) },
+                onDecrease = {
+                    if (it.quantity > 1)
+                        cartVm.decrease(userId, it.cartItemId)
+                    else
+                        cartVm.remove(userId, it.cartItemId)
+                },
+                onRemove = { cartVm.remove(userId, it.cartItemId) },
+                onCheckout = {
+                    showCart = false
+                    showCheckout = true
+                }
+            )
+        }
+
+        if (showCheckout) {
+            CheckoutBottomSheet(
+                cartVm = cartVm,
+                onDismiss = { showCheckout = false },
+                onOrderPlaced = {
+                    showCheckout = false
+                    showOrderSuccess = true
+                }
+            )
+        }
+
+        if (showOrderSuccess) {
+            OrderSuccessScreen {
+                showOrderSuccess = false
+            }
         }
     }
 }
+
+/* ---------------- MENU GRID CARD (UNCHANGED UI) ---------------- */
+
+@Composable
+private fun MenuGridCard(
+    item: MenuItemDto,
+    quantity: Int,
+    onAdd: () -> Unit,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onClick: () -> Unit
+) {
+    // ✅ CORRECT image field
+    val fullImageUrl: String? =
+        when {
+            !item.image_full.isNullOrBlank() ->
+                item.image_full
+
+            else -> null
+        }
+
+    Column(
+        Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .clickable { onClick() }
+            .padding(10.dp)
+    ) {
+
+        // ✅ MENU GRID IMAGE (FIGMA SAFE)
+        AsyncImage(
+            model = fullImageUrl,
+            contentDescription = item.name,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFE0E0E0)),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(item.name ?: "-", fontWeight = FontWeight.Bold)
+        Text(item.category ?: "", fontSize = 12.sp, color = Color.Gray)
+
+        Spacer(Modifier.height(6.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            Text(
+                "₹${item.price ?: 0}",
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF00A86B)
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            if (quantity == 0) {
+                Box(
+                    Modifier
+                        .height(32.dp)
+                        .width(70.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF00C853))
+                        .clickable { onAdd() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+ Add", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Row(
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF00C853))
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "−",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        modifier = Modifier.clickable { onDecrease() }
+                    )
+                    Text(
+                        " $quantity ",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "+",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        modifier = Modifier.clickable { onIncrease() }
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
 
 
 

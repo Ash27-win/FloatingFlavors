@@ -19,6 +19,7 @@ materialIconsExtended = "1.7.5"
 material3 = "1.4.0"
 foundation = "1.9.5"
 navigationRuntimeKtx = "2.9.6"
+playServicesCastFramework = "22.2.0"
 
 #composeUi = "1.9.5"
 #composeMaterial3 = "1.4.0"
@@ -45,6 +46,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+play-services-cast-framework = { group = "com.google.android.gms", name = "play-services-cast-framework", version.ref = "playServicesCastFramework" }
 
 #androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }
 #androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial3" }
