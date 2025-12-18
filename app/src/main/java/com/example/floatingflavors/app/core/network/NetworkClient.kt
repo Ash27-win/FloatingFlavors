@@ -8,6 +8,7 @@ import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import com.example.floatingflavors.app.feature.user.data.cart.CartApi
 import com.example.floatingflavors.app.feature.user.data.cart.CheckoutApi
 import com.example.floatingflavors.app.feature.user.data.remote.api.HomeApi
+import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -16,8 +17,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
-    const val BASE_URL = "http://10.114.15.250/floating_flavors_api/"  //APPA WIFI
-//    const val BASE_URL = "http://192.168.124.250/floating_flavors_api/"
+//    const val BASE_URL = "http://10.114.15.250/floating_flavors_api/"  //APPA WIFI
+    const val BASE_URL = "http://192.168.124.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
     private val logging = HttpLoggingInterceptor().apply {
@@ -57,6 +58,11 @@ object NetworkClient {
 
     // Checkout API
     val checkoutApi: CheckoutApi = retrofit.create(CheckoutApi::class.java)
+
+    val userSettingsApi: UserSettingsApi by lazy {
+        retrofit.create(UserSettingsApi::class.java)
+    }
+
 
 }
 

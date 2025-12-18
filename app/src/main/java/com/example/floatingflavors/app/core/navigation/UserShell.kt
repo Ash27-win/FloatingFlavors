@@ -1,20 +1,27 @@
 package com.example.floatingflavors.app.core.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.RestaurantMenu
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.*
+import com.example.floatingflavors.app.core.network.NetworkClient
+import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsRepository
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.PrivacyPolicyScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsViewModel
+import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.TermsOfServiceScreen
 
 @Composable
-fun UserShell(startRoute: String = Screen.UserHome.route) {
+fun UserShell(
+    startRoute: String = Screen.UserHome.route
+) {
 
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -23,6 +30,8 @@ fun UserShell(startRoute: String = Screen.UserHome.route) {
     Scaffold(
         bottomBar = {
             NavigationBar {
+
+                // 🔹 HOME
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserHome.route,
                     onClick = {
@@ -31,10 +40,11 @@ fun UserShell(startRoute: String = Screen.UserHome.route) {
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.Home, null) },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                     label = { Text("Home") }
                 )
 
+                // 🔹 MENU
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserMenuGrid.route,
                     onClick = {
@@ -42,10 +52,35 @@ fun UserShell(startRoute: String = Screen.UserHome.route) {
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.RestaurantMenu, null) },
+                    icon = { Icon(Icons.Default.RestaurantMenu, contentDescription = "Menu") },
                     label = { Text("Menu") }
                 )
 
+                // 🔹 BOOKING
+                NavigationBarItem(
+                    selected = currentRoute == Screen.UserBooking.route,
+                    onClick = {
+                        navController.navigate(Screen.UserBooking.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.EventAvailable, contentDescription = "Booking") },
+                    label = { Text("Booking") }
+                )
+
+                // 🔹 ORDERS / TRACK
+                NavigationBarItem(
+                    selected = currentRoute == Screen.UserOrders.route,
+                    onClick = {
+                        navController.navigate(Screen.UserOrders.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.ReceiptLong, contentDescription = "Orders") },
+                    label = { Text("Orders") }
+                )
+
+                // 🔹 PROFILE
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserProfile.route,
                     onClick = {
@@ -53,12 +88,14 @@ fun UserShell(startRoute: String = Screen.UserHome.route) {
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.Person, null) },
-                    label = { Text("Profile") }
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                    label = { Text("Settings") }
                 )
+
             }
         }
     ) { padding ->
+
         NavHost(
             navController = navController,
             startDestination = startRoute,
@@ -74,18 +111,56 @@ fun UserShell(startRoute: String = Screen.UserHome.route) {
                 )
             }
 
-            // ✅ MENU (THIS WAS MISSING)
+            // ✅ MENU
             composable(Screen.UserMenuGrid.route) {
                 UserMenuGridScreen()
             }
 
-            // ✅ PROFILE (placeholder)
-            composable(Screen.UserProfile.route) {
-                Text("Profile Screen")
+            // ✅ BOOKING (Placeholder – UI next)
+            composable(Screen.UserBooking.route) {
+                Text("Booking Screen")
             }
+
+            // ✅ ORDERS / TRACK (Placeholder – UI next)
+            composable(Screen.UserOrders.route) {
+                Text("Orders & Tracking Screen")
+            }
+
+            // 🔹 SETTINGS
+            composable(Screen.UserProfile.route) {
+
+                val viewModel = remember {
+                    SettingsViewModel(
+                        UserSettingsRepository(
+                            NetworkClient.userSettingsApi
+                        )
+                    )
+                }
+
+                SettingsScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateTerms = {
+                        navController.navigate(Screen.TermsOfService.route)
+                    },
+                    onNavigatePrivacy = {
+                        navController.navigate(Screen.PrivacyPolicy.route)
+                    }
+                )
+            }
+
+            composable(Screen.TermsOfService.route) {
+                TermsOfServiceScreen { navController.popBackStack() }
+            }
+
+            composable(Screen.PrivacyPolicy.route) {
+                PrivacyPolicyScreen { navController.popBackStack() }
+            }
+
         }
     }
 }
+
 
 
 

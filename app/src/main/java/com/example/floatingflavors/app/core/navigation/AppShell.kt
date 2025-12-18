@@ -26,7 +26,14 @@ private sealed class BottomTab(val route: String, val label: String, val icon: @
     object Orders : BottomTab(Screen.AdminMenuInventory.route, "Menu", { Icon(Icons.Default.List, contentDescription = "Orders/Menu") })
     object Menu : BottomTab(Screen.UserMenuGrid.route, "Browse", { Icon(Icons.Default.RestaurantMenu, contentDescription = "Menu") })
     object Alerts : BottomTab(Screen.AdminDashboard.route, "Alerts", { Icon(Icons.Default.Notifications, contentDescription = "Alerts") }) // replace if you add a dedicated route
-    object Profile : BottomTab(Screen.UserProfile.route, "Profile", { Icon(Icons.Default.Person, contentDescription = "Profile") })
+//    object Profile : BottomTab(Screen.UserProfile.route, "Profile", { Icon(Icons.Default.Person, contentDescription = "Profile") })
+    object Profile : BottomTab(
+        Screen.AdminProfile.route,
+        "Profile",
+        { Icon(Icons.Default.Person, contentDescription = "Profile") }
+    )
+
+
 }
 
 @Composable

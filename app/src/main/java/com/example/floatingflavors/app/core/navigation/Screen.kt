@@ -25,5 +25,12 @@ sealed class Screen(val route: String) {
     // User inner screens
     object UserHome : Screen("user_home")
     object UserMenuGrid : Screen("user_menu_grid")
+    object UserBooking : Screen("user_booking")
+    object UserOrders : Screen("user_orders")
     object UserProfile : Screen("user_profile")
+
+    object TermsOfService : Screen("terms_of_service")
+    object PrivacyPolicy : Screen("privacy_policy")
+
+
 }
