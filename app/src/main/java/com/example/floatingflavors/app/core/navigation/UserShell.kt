@@ -8,11 +8,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
 import androidx.navigation.compose.*
 import com.example.floatingflavors.app.core.network.NetworkClient
+import com.example.floatingflavors.app.feature.user.data.settings.EditProfileRepository
 import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsRepository
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.EditProfileScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.EditProfileViewModel
+import com.example.floatingflavors.app.feature.user.data.settings.EditProfileApi
 import com.example.floatingflavors.app.feature.user.presentation.settings.PrivacyPolicyScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsViewModel
 import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsScreen
@@ -140,6 +145,9 @@ fun UserShell(
                 SettingsScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
+                    onEditProfileClick = {
+                        navController.navigate(Screen.EditProfile.route)
+                    },
                     onNavigateTerms = {
                         navController.navigate(Screen.TermsOfService.route)
                     },
@@ -155,6 +163,20 @@ fun UserShell(
 
             composable(Screen.PrivacyPolicy.route) {
                 PrivacyPolicyScreen { navController.popBackStack() }
+            }
+
+            composable(Screen.EditProfile.route) {
+
+                val editProfileViewModel = remember {
+                    EditProfileViewModel(
+                        EditProfileRepository(NetworkClient.editProfileApi)
+                    )
+                }
+
+                EditProfileScreen(
+                    viewModel = editProfileViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
         }

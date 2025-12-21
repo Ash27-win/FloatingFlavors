@@ -17,16 +17,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.floatingflavors.app.core.network.NetworkClient
 
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit,
+    onEditProfileClick: () -> Unit,
     onNavigateTerms: () -> Unit,
     onNavigatePrivacy: () -> Unit
 ) {
@@ -37,6 +41,13 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.loadSettings()
     }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.loadSettings() // 🔥 refresh when coming back
+        }
+    }
+
 
     val layoutDirection = LocalLayoutDirection.current
 
@@ -122,12 +133,20 @@ fun SettingsScreen(
                                         .background(Color(0xFFFFE0B2)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFF9800),
-                                        modifier = Modifier.size(30.dp)
+                                    AsyncImage(
+                                        model = NetworkClient.BASE_URL + "/" + data.profile_image,
+                                        contentDescription = "Profile Image",
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
                                     )
+//                                    Icon(
+//                                        Icons.Default.Person,
+//                                        contentDescription = null,
+//                                        tint = Color(0xFFFF9800),
+//                                        modifier = Modifier.size(30.dp)
+//                                    )
                                 }
 
                                 Spacer(Modifier.width(12.dp))
@@ -154,7 +173,7 @@ fun SettingsScreen(
                                     Icons.Default.Edit,
                                     contentDescription = "Edit",
                                     tint = Color(0xFFFF9800),
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.clickable { onEditProfileClick() }
                                 )
                             }
                         }

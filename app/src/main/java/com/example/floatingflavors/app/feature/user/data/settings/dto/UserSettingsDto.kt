@@ -4,6 +4,7 @@ data class UserSettingsDto(
     val id: String? = "",
     val name: String? = "",
     val email: String? = "",
+    val profile_image: String? = "",
     val language: String? = "",
     val notifications_enabled: String? = "0"
 ) {
