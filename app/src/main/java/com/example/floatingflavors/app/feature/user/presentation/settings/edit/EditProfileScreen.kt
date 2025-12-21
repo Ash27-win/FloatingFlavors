@@ -1,4 +1,4 @@
-package com.example.floatingflavors.app.feature.user.presentation.settings
+package com.example.floatingflavors.app.feature.user.presentation.settings.edit
 
 import android.content.Context
 import android.net.Uri
@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -82,7 +83,7 @@ fun EditProfileScreen(
                 Text(
                     text = "Edit Profile",
                     fontSize = 18.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }

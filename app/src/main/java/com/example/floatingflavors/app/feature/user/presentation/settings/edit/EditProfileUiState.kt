@@ -1,4 +1,4 @@
-package com.example.floatingflavors.app.feature.user.presentation.settings
+package com.example.floatingflavors.app.feature.user.presentation.settings.edit
 
 sealed class EditProfileUiState {
     object Idle : EditProfileUiState()

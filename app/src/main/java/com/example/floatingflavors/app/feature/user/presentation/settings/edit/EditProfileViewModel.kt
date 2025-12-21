@@ -1,4 +1,4 @@
-package com.example.floatingflavors.app.feature.user.presentation.settings
+package com.example.floatingflavors.app.feature.user.presentation.settings.edit
 
 import android.net.Uri
 import androidx.compose.runtime.*

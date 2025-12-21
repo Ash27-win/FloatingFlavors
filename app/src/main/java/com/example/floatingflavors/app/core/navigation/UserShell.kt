@@ -8,20 +8,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
 import androidx.navigation.compose.*
 import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.user.data.settings.EditProfileRepository
 import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsRepository
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.EditProfileScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.EditProfileViewModel
-import com.example.floatingflavors.app.feature.user.data.settings.EditProfileApi
+import com.example.floatingflavors.app.feature.user.presentation.settings.edit.EditProfileScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.edit.EditProfileViewModel
 import com.example.floatingflavors.app.feature.user.presentation.settings.PrivacyPolicyScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsViewModel
 import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.TermsOfServiceScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.SavedAddressScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.AddAddressScreen
+import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.AddressViewModel
+import com.example.floatingflavors.app.feature.user.data.settings.AddressRepository
+
 
 @Composable
 fun UserShell(
@@ -141,7 +144,6 @@ fun UserShell(
                         )
                     )
                 }
-
                 SettingsScreen(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
@@ -153,6 +155,9 @@ fun UserShell(
                     },
                     onNavigatePrivacy = {
                         navController.navigate(Screen.PrivacyPolicy.route)
+                    },
+                    onSavedAddressClick = {
+                        navController.navigate(Screen.SavedAddresses.route)
                     }
                 )
             }
@@ -175,6 +180,41 @@ fun UserShell(
 
                 EditProfileScreen(
                     viewModel = editProfileViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            // 🔹 SAVED ADDRESSES
+            composable(Screen.SavedAddresses.route) {
+
+                val vm = remember {
+                    AddressViewModel(
+                        AddressRepository(NetworkClient.addressApi)
+                    )
+                }
+
+                SavedAddressScreen(
+                    vm = vm,
+                    userId = 1, // TEMP (UserSession later)
+                    onBack = { navController.popBackStack() },
+                    onAdd = {
+                        navController.navigate(Screen.AddAddress.route)
+                    }
+                )
+            }
+
+// 🔹 ADD ADDRESS
+            composable(Screen.AddAddress.route) {
+
+                val vm = remember {
+                    AddressViewModel(
+                        AddressRepository(NetworkClient.addressApi)
+                    )
+                }
+
+                AddAddressScreen(
+                    vm = vm,
+                    userId = 1, // TEMP
                     onBack = { navController.popBackStack() }
                 )
             }

@@ -32,8 +32,10 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onEditProfileClick: () -> Unit,
     onNavigateTerms: () -> Unit,
-    onNavigatePrivacy: () -> Unit
-) {
+    onNavigatePrivacy: () -> Unit,
+    onSavedAddressClick: () -> Unit,
+
+    ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     BackHandler { onBack() }
@@ -203,7 +205,8 @@ fun SettingsScreen(
                             Icons.Default.LocationOn,
                             "Saved Addresses",
                             iconBg = Color(0xFFF1ECFF),
-                            iconTint = Color(0xFF8B5CF6)
+                            iconTint = Color(0xFF8B5CF6),
+                            onClick = onSavedAddressClick
                         )
                     }
 

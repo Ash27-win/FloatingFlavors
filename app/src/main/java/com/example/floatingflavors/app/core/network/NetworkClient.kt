@@ -8,6 +8,7 @@ import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import com.example.floatingflavors.app.feature.user.data.cart.CartApi
 import com.example.floatingflavors.app.feature.user.data.cart.CheckoutApi
 import com.example.floatingflavors.app.feature.user.data.remote.api.HomeApi
+import com.example.floatingflavors.app.feature.user.data.settings.AddressApi
 import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsApi
 import com.example.floatingflavors.app.feature.user.data.settings.EditProfileApi
 import okhttp3.OkHttpClient
@@ -67,6 +68,11 @@ object NetworkClient {
     val editProfileApi: EditProfileApi by lazy {
         retrofit.create(EditProfileApi::class.java)
     }
+
+    val addressApi: AddressApi by lazy {
+        retrofit.create(AddressApi::class.java)
+    }
+
 
 
 }

@@ -21,6 +21,8 @@ foundation = "1.9.5"
 navigationRuntimeKtx = "2.9.6"
 playServicesCastFramework = "22.2.0"
 ui = "1.10.0"
+contentpager = "1.0.0"
+foundationVersion = "1.10.0"
 
 #composeUi = "1.9.5"
 #composeMaterial3 = "1.4.0"
@@ -49,6 +51,8 @@ androidx-compose-foundation = { group = "androidx.compose.foundation", name = "f
 androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
 play-services-cast-framework = { group = "com.google.android.gms", name = "play-services-cast-framework", version.ref = "playServicesCastFramework" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+androidx-contentpager = { group = "androidx.contentpager", name = "contentpager", version.ref = "contentpager" }
+androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
 
 #androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }
 #androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial3" }
