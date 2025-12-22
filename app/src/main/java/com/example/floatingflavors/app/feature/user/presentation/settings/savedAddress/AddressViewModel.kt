@@ -16,6 +16,9 @@ class AddressViewModel(
     var addresses: List<AddressDto> by mutableStateOf(emptyList())
         private set
 
+    var refreshTrigger by mutableStateOf(0)
+        private set
+
     fun load(userId: Int) = viewModelScope.launch {
         addresses = repo.load(userId).data ?: emptyList()
     }
@@ -31,6 +34,7 @@ class AddressViewModel(
         onDone: () -> Unit
     ) = viewModelScope.launch {
         repo.add(userId, label, house, area, pincode, city, landmark)
+        refreshTrigger++
         onDone()
     }
 
@@ -38,4 +42,10 @@ class AddressViewModel(
         repo.delete(addressId)
         load(userId)
     }
+
+    fun setDefault(addressId: Int, userId: Int) = viewModelScope.launch {
+        repo.setDefault(addressId, userId)
+        load(userId) // 🔥 refresh list
+    }
 }
+

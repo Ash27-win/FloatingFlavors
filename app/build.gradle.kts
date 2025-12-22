@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.contentpager)
     implementation(libs.androidx.foundation)
+    implementation(libs.cronet.embedded)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

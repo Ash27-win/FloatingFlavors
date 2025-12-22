@@ -23,6 +23,7 @@ playServicesCastFramework = "22.2.0"
 ui = "1.10.0"
 contentpager = "1.0.0"
 foundationVersion = "1.10.0"
+cronetEmbedded = "141.7340.3"
 
 #composeUi = "1.9.5"
 #composeMaterial3 = "1.4.0"
@@ -53,6 +54,7 @@ play-services-cast-framework = { group = "com.google.android.gms", name = "play-
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 androidx-contentpager = { group = "androidx.contentpager", name = "contentpager", version.ref = "contentpager" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
+cronet-embedded = { group = "org.chromium.net", name = "cronet-embedded", version.ref = "cronetEmbedded" }
 
 #androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }
 #androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial3" }

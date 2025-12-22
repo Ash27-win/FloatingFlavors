@@ -49,8 +49,7 @@ fun AdminSettingsScreen(
     viewModel: AdminSettingsViewModel,
     onSignOut: (() -> Unit)? = null
 ) {
-    // UI state (null while loading)
-    val uiState by viewModel.state.collectAsState(initial = null)
+    val uiState by viewModel.state.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -71,9 +70,8 @@ fun AdminSettingsScreen(
         }
     }
 
-    // load on first composition
     LaunchedEffect(Unit) {
-        if (uiState == null) viewModel.load(adminId = 1)
+        viewModel.load(adminId = 1)
     }
 
     Scaffold(

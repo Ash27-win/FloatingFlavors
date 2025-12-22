@@ -1,6 +1,6 @@
 package com.example.floatingflavors.app.feature.user.data.settings
 
-import com.example.floatingflavors.app.feature.admin.data.remote.dto.ApiResponse
+import com.example.floatingflavors.app.feature.settings.data.remote.dto.ApiResponse
 import com.example.floatingflavors.app.feature.user.data.settings.dto.AddressDto
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
@@ -28,8 +28,30 @@ interface AddressApi {
     ): ApiResponse<Unit>
 
     @FormUrlEncoded
+    @POST("user_address_update.php")
+    suspend fun updateAddress(
+        @Field("address_id") addressId: Int,
+        @Field("user_id") userId: Int,
+        @Field("label") label: String,
+        @Field("house") house: String,
+        @Field("area") area: String,
+        @Field("pincode") pincode: String,
+        @Field("city") city: String,
+        @Field("landmark") landmark: String?,
+        @Field("is_default") isDefault: Int
+    ): ApiResponse<Unit>
+
+    @FormUrlEncoded
     @POST("user_address_delete.php")
     suspend fun deleteAddress(
         @Field("address_id") id: Int
     ): ApiResponse<Unit>
+
+    @FormUrlEncoded
+    @POST("user_address_set_default.php")
+    suspend fun setDefaultAddress(
+        @Field("address_id") addressId: Int,
+        @Field("user_id") userId: Int
+    ): ApiResponse<Unit>
+
 }

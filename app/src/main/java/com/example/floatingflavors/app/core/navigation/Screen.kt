@@ -33,6 +33,10 @@ sealed class Screen(val route: String) {
 
     object SavedAddresses : Screen("saved_addresses")
     object AddAddress : Screen("add_address")
+
+    object EditAddress : Screen("edit_address/{addressId}") {
+        fun createRoute(addressId: Int) = "edit_address/$addressId"
+    }
     object TermsOfService : Screen("terms_of_service")
     object PrivacyPolicy : Screen("privacy_policy")
 

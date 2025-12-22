@@ -4,55 +4,56 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.example.floatingflavors.app.core.network.NetworkClient
-import com.example.floatingflavors.app.feature.user.data.settings.EditProfileRepository
-import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsRepository
+import com.example.floatingflavors.app.feature.user.data.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.edit.EditProfileScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.edit.EditProfileViewModel
-import com.example.floatingflavors.app.feature.user.presentation.settings.PrivacyPolicyScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsViewModel
-import com.example.floatingflavors.app.feature.user.presentation.settings.SettingsScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.TermsOfServiceScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.SavedAddressScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.AddAddressScreen
-import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.AddressViewModel
-import com.example.floatingflavors.app.feature.user.data.settings.AddressRepository
-
+import com.example.floatingflavors.app.feature.user.presentation.settings.*
+import com.example.floatingflavors.app.feature.user.presentation.settings.edit.*
+import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.*
 
 @Composable
 fun UserShell(
     startRoute: String = Screen.UserHome.route
 ) {
-
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+
+    // 🔥 SINGLE SOURCE OF TRUTH (VERY IMPORTANT)
+    val addressViewModel = remember {
+        AddressViewModel(
+            AddressRepository(NetworkClient.addressApi)
+        )
+    }
+
+    val editAddressViewModel = remember {
+        EditAddressViewModel(
+            AddressRepository(NetworkClient.addressApi)
+        )
+    }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
 
-                // 🔹 HOME
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserHome.route,
                     onClick = {
                         navController.navigate(Screen.UserHome.route) {
-                            popUpTo(Screen.UserHome.route) { inclusive = false }
+                            popUpTo(Screen.UserHome.route)
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                    icon = { Icon(Icons.Default.Home, null) },
                     label = { Text("Home") }
                 )
 
-                // 🔹 MENU
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserMenuGrid.route,
                     onClick = {
@@ -60,46 +61,36 @@ fun UserShell(
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.RestaurantMenu, contentDescription = "Menu") },
+                    icon = { Icon(Icons.Default.RestaurantMenu, null) },
                     label = { Text("Menu") }
                 )
 
-                // 🔹 BOOKING
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserBooking.route,
                     onClick = {
-                        navController.navigate(Screen.UserBooking.route) {
-                            launchSingleTop = true
-                        }
+                        navController.navigate(Screen.UserBooking.route)
                     },
-                    icon = { Icon(Icons.Default.EventAvailable, contentDescription = "Booking") },
+                    icon = { Icon(Icons.Default.EventAvailable, null) },
                     label = { Text("Booking") }
                 )
 
-                // 🔹 ORDERS / TRACK
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserOrders.route,
                     onClick = {
-                        navController.navigate(Screen.UserOrders.route) {
-                            launchSingleTop = true
-                        }
+                        navController.navigate(Screen.UserOrders.route)
                     },
-                    icon = { Icon(Icons.Default.ReceiptLong, contentDescription = "Orders") },
+                    icon = { Icon(Icons.Default.ReceiptLong, null) },
                     label = { Text("Orders") }
                 )
 
-                // 🔹 PROFILE
                 NavigationBarItem(
                     selected = currentRoute == Screen.UserProfile.route,
                     onClick = {
-                        navController.navigate(Screen.UserProfile.route) {
-                            launchSingleTop = true
-                        }
+                        navController.navigate(Screen.UserProfile.route)
                     },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                    icon = { Icon(Icons.Default.Settings, null) },
                     label = { Text("Settings") }
                 )
-
             }
         }
     ) { padding ->
@@ -110,7 +101,6 @@ fun UserShell(
             modifier = Modifier.padding(padding)
         ) {
 
-            // ✅ HOME
             composable(Screen.UserHome.route) {
                 UserHomeScreen(
                     onBrowseMenu = {
@@ -119,33 +109,28 @@ fun UserShell(
                 )
             }
 
-            // ✅ MENU
             composable(Screen.UserMenuGrid.route) {
                 UserMenuGridScreen()
             }
 
-            // ✅ BOOKING (Placeholder – UI next)
             composable(Screen.UserBooking.route) {
                 Text("Booking Screen")
             }
 
-            // ✅ ORDERS / TRACK (Placeholder – UI next)
             composable(Screen.UserOrders.route) {
                 Text("Orders & Tracking Screen")
             }
 
-            // 🔹 SETTINGS
             composable(Screen.UserProfile.route) {
 
-                val viewModel = remember {
+                val settingsVm = remember {
                     SettingsViewModel(
-                        UserSettingsRepository(
-                            NetworkClient.userSettingsApi
-                        )
+                        UserSettingsRepository(NetworkClient.userSettingsApi)
                     )
                 }
+
                 SettingsScreen(
-                    viewModel = viewModel,
+                    viewModel = settingsVm,
                     onBack = { navController.popBackStack() },
                     onEditProfileClick = {
                         navController.navigate(Screen.EditProfile.route)
@@ -162,6 +147,20 @@ fun UserShell(
                 )
             }
 
+            composable(Screen.EditProfile.route) {
+
+                val editProfileVm = remember {
+                    EditProfileViewModel(
+                        EditProfileRepository(NetworkClient.editProfileApi)
+                    )
+                }
+
+                EditProfileScreen(
+                    viewModel = editProfileVm,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
             composable(Screen.TermsOfService.route) {
                 TermsOfServiceScreen { navController.popBackStack() }
             }
@@ -170,58 +169,58 @@ fun UserShell(
                 PrivacyPolicyScreen { navController.popBackStack() }
             }
 
-            composable(Screen.EditProfile.route) {
-
-                val editProfileViewModel = remember {
-                    EditProfileViewModel(
-                        EditProfileRepository(NetworkClient.editProfileApi)
-                    )
-                }
-
-                EditProfileScreen(
-                    viewModel = editProfileViewModel,
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
-            // 🔹 SAVED ADDRESSES
+            // ✅ SAVED ADDRESSES
             composable(Screen.SavedAddresses.route) {
 
-                val vm = remember {
-                    AddressViewModel(
-                        AddressRepository(NetworkClient.addressApi)
-                    )
-                }
-
                 SavedAddressScreen(
-                    vm = vm,
-                    userId = 1, // TEMP (UserSession later)
+                    vm = addressViewModel,
+                    userId = 1,
                     onBack = { navController.popBackStack() },
                     onAdd = {
                         navController.navigate(Screen.AddAddress.route)
+                    },
+                    onEdit = { addressId: Int ->
+                        navController.navigate(
+                            Screen.EditAddress.createRoute(addressId)
+                        )
                     }
                 )
             }
 
-// 🔹 ADD ADDRESS
+            // ✅ ADD ADDRESS
             composable(Screen.AddAddress.route) {
 
-                val vm = remember {
-                    AddressViewModel(
-                        AddressRepository(NetworkClient.addressApi)
-                    )
-                }
-
                 AddAddressScreen(
-                    vm = vm,
-                    userId = 1, // TEMP
+                    vm = addressViewModel,
+                    userId = 1,
                     onBack = { navController.popBackStack() }
                 )
             }
 
+            // ✅ EDIT ADDRESS
+            composable(
+                route = Screen.EditAddress.route,
+                arguments = listOf(navArgument("addressId") {
+                    type = NavType.IntType
+                })
+            ) { entry ->
+
+                val addressId = entry.arguments!!.getInt("addressId")
+
+                val address = addressViewModel.addresses
+                    .first { it.id == addressId }
+
+                EditAddressScreen(
+                    vm = editAddressViewModel,
+                    address = address,
+                    userId = 1,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
+
 
 
 

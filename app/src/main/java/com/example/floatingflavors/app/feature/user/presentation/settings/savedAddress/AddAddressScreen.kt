@@ -6,12 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,7 +25,6 @@ fun AddAddressScreen(
 ) {
     var label by remember { mutableStateOf("Home") }
     var customLabel by remember { mutableStateOf("") }
-
     var house by remember { mutableStateOf("") }
     var area by remember { mutableStateOf("") }
     var pincode by remember { mutableStateOf("") }
@@ -35,163 +35,208 @@ fun AddAddressScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF6F8F6))
-            .padding(20.dp)
+            .padding(horizontal = 20.dp)
     ) {
 
-        /* ---------- HEADER ---------- */
+        Spacer(Modifier.height(16.dp))
+
+        // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.Default.ArrowBack,
-                contentDescription = null,
+                null,
                 modifier = Modifier.clickable { onBack() }
             )
             Spacer(Modifier.weight(1f))
-            Text(
-                "Add New Address",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("Add New Address", fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(28.dp))
 
-        /* ---------- ADDRESS TYPE ---------- */
-        AddressTypeSelector(
-            selected = label,
-            onSelect = {
-                label = it
-                if (it != "Other") customLabel = ""
+        Text("ADDRESS TYPE", fontSize = 12.sp, color = Color.Gray)
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            AddressTypeChip("Home", Icons.Default.Home, label == "Home") { label = "Home" }
+            AddressTypeChip("Work", Icons.Default.Work, label == "Work") { label = "Work" }
+            AddressTypeChip("Other", Icons.Default.Place, label == "Other") { label = "Other" }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        InputField(
+            label = "House No, Building Name",
+            hint = "e.g. Flat 4B, Greenwood Heights",
+            value = house,
+            required = true
+        ) { house = it }
+
+        InputField(
+            label = "Road name, Area, Colony",
+            hint = "e.g. 5th Main Road, Indiranagar",
+            value = area,
+            required = true
+        ) { area = it }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top // 🔥 IMPORTANT
+        ) {
+
+            HalfWidthField(modifier = Modifier.weight(1f)) {
+                InputField(
+                    label = "Pincode",
+                    hint = "000000",
+                    value = pincode,
+                    required = true
+                ) { pincode = it }
             }
-        )
 
-        /* ---------- CUSTOM LABEL (ONLY FOR OTHER) ---------- */
-        if (label == "Other") {
-            AddressInput(
-                label = "Address name (e.g. Hostel, Office 2)",
-                value = customLabel
-            ) { customLabel = it }
+            HalfWidthField(modifier = Modifier.weight(1f)) {
+                InputField(
+                    label = "City",
+                    hint = "City Name",
+                    value = city,
+                    required = true
+                ) { city = it }
+            }
         }
 
-        /* ---------- ADDRESS FIELDS ---------- */
-        AddressInput("House No, Building*", house) { house = it }
-        AddressInput("Road / Area*", area) { area = it }
-
-        Row {
-            AddressInput(
-                label = "Pincode*",
-                value = pincode,
-                modifier = Modifier.weight(1f)
-            ) { pincode = it }
-
-            Spacer(Modifier.width(12.dp))
-
-            AddressInput(
-                label = "City*",
-                value = city,
-                modifier = Modifier.weight(1f)
-            ) { city = it }
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Nearby Landmark", fontWeight = FontWeight.Medium)
+            Text("Optional", fontSize = 12.sp, color = Color.Gray)
         }
 
-        AddressInput("Nearby Landmark (Optional)", landmark) {
-            landmark = it
-        }
+        Spacer(Modifier.height(6.dp))
+
+        InputField(
+            "",
+            "Famous Shop / Mall / Park",
+            landmark,
+            leading = Icons.Default.Flag
+        ) { landmark = it }
 
         Spacer(Modifier.weight(1f))
 
-        /* ---------- SAVE BUTTON ---------- */
         Button(
             onClick = {
-
-                val finalLabel =
-                    if (label == "Other" && customLabel.isNotBlank())
-                        customLabel
-                    else
-                        label
-
                 vm.add(
                     userId = userId,
-                    label = finalLabel,
+                    label = label,
                     house = house,
                     area = area,
                     pincode = pincode,
                     city = city,
                     landmark = landmark.ifBlank { null }
-                ) {
-                    onBack()
-                }
+                ) { onBack() }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(30.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF13EC5B)
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF13EC5B))
         ) {
             Text("Save Address", fontWeight = FontWeight.Bold)
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }
 
-/* ---------- INPUT FIELD ---------- */
-@Composable
-private fun AddressInput(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    onChange: (String) -> Unit
-) {
-    Text(label, fontSize = 13.sp, color = Color.Gray)
-    OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
-        modifier = modifier.fillMaxWidth(),
-        singleLine = true,
-        shape = RoundedCornerShape(14.dp)
-    )
-    Spacer(Modifier.height(12.dp))
-}
-
-/* ---------- TYPE SELECTOR ---------- */
-@Composable
-fun AddressTypeSelector(
-    selected: String,
-    onSelect: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        AddressTypeChip("Home", selected == "Home") { onSelect("Home") }
-        AddressTypeChip("Work", selected == "Work") { onSelect("Work") }
-        AddressTypeChip("Other", selected == "Other") { onSelect("Other") }
-    }
-
-    Spacer(Modifier.height(24.dp))
-}
-
-/* ---------- CHIP ---------- */
 @Composable
 private fun AddressTypeChip(
-    label: String,
+    text: String,
+    icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit
 ) {
     val bg = if (selected) Color(0xFFE6F9EE) else Color.White
-    val border = if (selected) Color(0xFF13EC5B) else Color(0xFFE5E7EB)
+    val border = if (selected) Color(0xFF13EC5B) else Color.Transparent
 
-    Box(
+    Column(
         modifier = Modifier
-            .height(56.dp)
-            .background(bg, RoundedCornerShape(20.dp))
-            .border(1.dp, border, RoundedCornerShape(20.dp))
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+            .size(96.dp, 76.dp)
+            .background(bg, RoundedCornerShape(22.dp))
+            .border(1.dp, border, RoundedCornerShape(22.dp))
+            .clickable { onClick() }
+            .padding(top = 12.dp), // 🔥 KEY FIX
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Icon(
+            icon,
+            null,
+            tint = Color.Gray,
+            modifier = Modifier.size(22.dp)
+        )
+
+        Spacer(Modifier.height(8.dp))
+
         Text(
-            text = label,
-            fontWeight = FontWeight.SemiBold
+            text = text,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp
         )
     }
 }
+
+@Composable
+private fun InputField(
+    label: String,
+    hint: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    leading: ImageVector? = null,
+    required: Boolean = false,
+    onChange: (String) -> Unit
+) {
+    if (label.isNotEmpty()) {
+        Row {
+            Text(
+                text = label,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+            if (required) {
+                Text(
+                    text = " *",
+                    color = Color.Red,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp)) // 👈 Figma spacing
+    }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        placeholder = { Text(hint) },
+        leadingIcon = leading?.let { { Icon(it, null) } },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        singleLine = true
+    )
+
+    Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun HalfWidthField(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Top
+    ) {
+        content()
+    }
+}
+
+
