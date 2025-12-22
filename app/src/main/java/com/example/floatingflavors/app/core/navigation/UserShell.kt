@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.user.data.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
+import com.example.floatingflavors.app.feature.user.presentation.membership.MembershipScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.settings.edit.*
@@ -105,6 +106,9 @@ fun UserShell(
                 UserHomeScreen(
                     onBrowseMenu = {
                         navController.navigate(Screen.UserMenuGrid.route)
+                    },
+                    onOpenMembership = {
+                        navController.navigate(Screen.UserMembership.route)
                     }
                 )
             }
@@ -217,6 +221,13 @@ fun UserShell(
                     onBack = { navController.popBackStack() }
                 )
             }
+
+            composable(Screen.UserMembership.route) {
+                MembershipScreen(
+                    navController = navController
+                )
+            }
+
         }
     }
 }

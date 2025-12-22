@@ -7,6 +7,7 @@ import com.example.floatingflavors.app.feature.menu.data.remote.MenuApi // NEW
 import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import com.example.floatingflavors.app.feature.user.data.cart.CartApi
 import com.example.floatingflavors.app.feature.user.data.cart.CheckoutApi
+import com.example.floatingflavors.app.feature.user.data.membership.MembershipApi
 import com.example.floatingflavors.app.feature.user.data.remote.api.HomeApi
 import com.example.floatingflavors.app.feature.user.data.settings.AddressApi
 import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsApi
@@ -71,6 +72,10 @@ object NetworkClient {
 
     val addressApi: AddressApi by lazy {
         retrofit.create(AddressApi::class.java)
+    }
+
+    val membershipApi: MembershipApi by lazy {
+        retrofit.create(MembershipApi::class.java)
     }
 
 
