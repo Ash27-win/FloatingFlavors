@@ -21,8 +21,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
-//    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
-    const val BASE_URL = "http://10.46.133.250/floating_flavors_api/"
+    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
+//    const val BASE_URL = "http://10.46.133.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
     private val logging = HttpLoggingInterceptor().apply {

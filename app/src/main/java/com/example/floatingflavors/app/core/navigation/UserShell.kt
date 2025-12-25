@@ -16,6 +16,7 @@ import com.example.floatingflavors.app.feature.user.data.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
 import com.example.floatingflavors.app.feature.user.presentation.booking.BookingScreen
 import com.example.floatingflavors.app.feature.user.presentation.booking.BookingViewModel
+import com.example.floatingflavors.app.feature.user.presentation.booking.EventMenuScreen
 import com.example.floatingflavors.app.feature.user.presentation.membership.MembershipScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.*
@@ -149,15 +150,18 @@ fun UserShell(
                     modifier = Modifier.padding(16.dp)
                 )
             }
-            // ✅ TEMP BOOKING MENU SCREEN
             composable(
                 route = Screen.UserBookingMenu.route,
-                arguments = listOf(navArgument("bookingId") {
-                    type = NavType.IntType
-                })
+                arguments = listOf(
+                    navArgument("bookingId") { type = NavType.IntType }
+                )
             ) { entry ->
                 val bookingId = entry.arguments!!.getInt("bookingId")
-                Text("Booking Menu Screen (ID: $bookingId)")
+
+                EventMenuScreen(
+                    bookingId = bookingId,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
 

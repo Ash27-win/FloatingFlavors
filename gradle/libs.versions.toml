@@ -25,6 +25,7 @@ contentpager = "1.0.0"
 foundationVersion = "1.10.0"
 cronetEmbedded = "141.7340.3"
 foundationLayout = "1.10.0"
+roomKtx = "2.8.4"
 
 #composeUi = "1.9.5"
 #composeMaterial3 = "1.4.0"
@@ -57,6 +58,7 @@ androidx-contentpager = { group = "androidx.contentpager", name = "contentpager"
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
 cronet-embedded = { group = "org.chromium.net", name = "cronet-embedded", version.ref = "cronetEmbedded" }
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 
 #androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }
 #androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial3" }

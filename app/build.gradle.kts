@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.cronet.embedded)
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.room.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
