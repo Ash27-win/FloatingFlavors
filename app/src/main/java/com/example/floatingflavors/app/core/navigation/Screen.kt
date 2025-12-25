@@ -31,6 +31,11 @@ sealed class Screen(val route: String) {
 
     object UserMembership : Screen("user_membership")
 
+    // 🔥 NEW — BOOKING MENU (TEMP SCREEN)
+    object UserBookingMenu : Screen("user_booking_menu/{bookingId}") {
+        fun createRoute(bookingId: Int) = "user_booking_menu/$bookingId"
+    }
+
     object EditProfile : Screen("edit_profile")
 
     object SavedAddresses : Screen("saved_addresses")

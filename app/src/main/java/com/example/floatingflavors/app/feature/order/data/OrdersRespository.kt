@@ -1,7 +1,9 @@
 package com.example.floatingflavors.app.feature.orders.data
 
 import com.example.floatingflavors.app.core.network.NetworkClient
+import com.example.floatingflavors.app.core.network.NetworkClient.ordersApi
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.SimpleResponseDto
+import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrderDetailResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCountsResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersServerResponseDto
@@ -10,6 +12,7 @@ import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrdersResp
 
 class OrdersRepository {
     private val api: OrdersApi = NetworkClient.retrofit.create(OrdersApi::class.java)
+
     suspend fun getOrders(): OrdersResponseDto = api.getOrders()
 
     // server-side search & paging
@@ -27,5 +30,19 @@ class OrdersRepository {
 
     suspend fun updateOrderStatus(orderId: Int, newStatus: String): SimpleResponseDto {
         return api.updateOrderStatus(orderId, newStatus)
+    }
+
+    // 🔥 Bookings - Fix return type
+    suspend fun getEventBookings(): List<AdminBookingDto> {
+        val response = api.getEventBookings()
+        return if (response.success) {
+            response.data
+        } else {
+            emptyList()
+        }
+    }
+
+    suspend fun updateBookingStatus(bookingId: String, status: String): SimpleResponseDto {
+        return api.updateBookingStatus(bookingId, status)
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.floatingflavors.app.feature.admin.presentation.order.BookingDetailDialog
 import com.example.floatingflavors.app.feature.admin.presentation.order.OrderDetailDialog
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
 import com.example.floatingflavors.app.feature.orders.presentation.OrdersViewModel
@@ -70,6 +71,30 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+
+    val selectedBooking by vm.selectedBooking.collectAsState()
+
+    if (selectedBooking != null) {
+        BookingDetailDialog(
+            booking = selectedBooking!!,
+            onAccept = {
+                // Convert Int? to String
+                val bookingId = selectedBooking!!.id?.toString() ?: ""
+                vm.updateBookingStatus(bookingId, "CONFIRMED")
+                // Refresh the list
+                vm.loadOrders()
+            },
+            onReject = {
+                // Convert Int? to String
+                val bookingId = selectedBooking!!.id?.toString() ?: ""
+                vm.updateBookingStatus(bookingId, "CANCELLED")
+                // Refresh the list
+                vm.loadOrders()
+            },
+            onDismiss = { vm.clearBooking() }
+        )
+    }
+
 
     // initial load
     LaunchedEffect(Unit) { vm.loadOrders() }
@@ -200,8 +225,13 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        val idInt = order.id?.toIntOrNull()
-                                        if (idInt != null) vm.loadOrderDetail(idInt)
+                                        if (order.isBooking) {
+                                            vm.selectBooking(order)
+                                        } else {
+                                            order.id?.toIntOrNull()?.let {
+                                                vm.loadOrderDetail(it)
+                                            }
+                                        }
                                     }
                             ) {
                                 OrderListCard(

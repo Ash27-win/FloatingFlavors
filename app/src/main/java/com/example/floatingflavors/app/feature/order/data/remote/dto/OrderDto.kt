@@ -9,5 +9,7 @@ data class OrderDto(
     val created_at: String?,   // ISO 8601 string from backend
     val time_ago: String?,
     val distance: String?,
-    val amount: String?
+    val amount: String?,
+    val isBooking: Boolean = false,
+    val bookingId: String? = null
 )

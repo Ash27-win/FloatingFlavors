@@ -6,17 +6,22 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.floatingflavors.app.core.network.NetworkClient
+import com.example.floatingflavors.app.feature.user.data.booking.BookingRepository
 import com.example.floatingflavors.app.feature.user.data.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.BookingScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.BookingViewModel
 import com.example.floatingflavors.app.feature.user.presentation.membership.MembershipScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.settings.edit.*
 import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun UserShell(
@@ -26,17 +31,13 @@ fun UserShell(
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
 
-    // 🔥 SINGLE SOURCE OF TRUTH (VERY IMPORTANT)
+    // 🔥 SINGLE SOURCE OF TRUTH
     val addressViewModel = remember {
-        AddressViewModel(
-            AddressRepository(NetworkClient.addressApi)
-        )
+        AddressViewModel(AddressRepository(NetworkClient.addressApi))
     }
 
     val editAddressViewModel = remember {
-        EditAddressViewModel(
-            AddressRepository(NetworkClient.addressApi)
-        )
+        EditAddressViewModel(AddressRepository(NetworkClient.addressApi))
     }
 
     Scaffold(
@@ -114,12 +115,51 @@ fun UserShell(
             }
 
             composable(Screen.UserMenuGrid.route) {
-                UserMenuGridScreen()
+                UserMenuGridScreen() // untouched
             }
 
             composable(Screen.UserBooking.route) {
-                Text("Booking Screen")
+                val bookingVm = remember {
+                    BookingViewModel(
+                        BookingRepository(NetworkClient.bookingApi)
+                    )
+                }
+
+                val snackbarHostState = remember { SnackbarHostState() }
+                val coroutineScope = rememberCoroutineScope()
+
+                BookingScreen(
+                    vm = bookingVm,
+                    userId = 1,
+                    onNavigateToMenu = { bookingId ->
+                        navController.navigate(
+                            Screen.UserBookingMenu.createRoute(bookingId.toIntOrNull() ?: 0)
+                        )
+                    },
+                    onShowMessage = { message ->
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    }
+                )
+
+                // Add Snackbar host
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
+            // ✅ TEMP BOOKING MENU SCREEN
+            composable(
+                route = Screen.UserBookingMenu.route,
+                arguments = listOf(navArgument("bookingId") {
+                    type = NavType.IntType
+                })
+            ) { entry ->
+                val bookingId = entry.arguments!!.getInt("bookingId")
+                Text("Booking Menu Screen (ID: $bookingId)")
+            }
+
 
             composable(Screen.UserOrders.route) {
                 Text("Orders & Tracking Screen")
@@ -173,9 +213,7 @@ fun UserShell(
                 PrivacyPolicyScreen { navController.popBackStack() }
             }
 
-            // ✅ SAVED ADDRESSES
             composable(Screen.SavedAddresses.route) {
-
                 SavedAddressScreen(
                     vm = addressViewModel,
                     userId = 1,
@@ -183,7 +221,7 @@ fun UserShell(
                     onAdd = {
                         navController.navigate(Screen.AddAddress.route)
                     },
-                    onEdit = { addressId: Int ->
+                    onEdit = { addressId ->
                         navController.navigate(
                             Screen.EditAddress.createRoute(addressId)
                         )
@@ -191,9 +229,7 @@ fun UserShell(
                 )
             }
 
-            // ✅ ADD ADDRESS
             composable(Screen.AddAddress.route) {
-
                 AddAddressScreen(
                     vm = addressViewModel,
                     userId = 1,
@@ -201,14 +237,12 @@ fun UserShell(
                 )
             }
 
-            // ✅ EDIT ADDRESS
             composable(
                 route = Screen.EditAddress.route,
                 arguments = listOf(navArgument("addressId") {
                     type = NavType.IntType
                 })
             ) { entry ->
-
                 val addressId = entry.arguments!!.getInt("addressId")
 
                 val address = addressViewModel.addresses
@@ -223,14 +257,12 @@ fun UserShell(
             }
 
             composable(Screen.UserMembership.route) {
-                MembershipScreen(
-                    navController = navController
-                )
+                MembershipScreen(navController)
             }
-
         }
     }
 }
+
 
 
 

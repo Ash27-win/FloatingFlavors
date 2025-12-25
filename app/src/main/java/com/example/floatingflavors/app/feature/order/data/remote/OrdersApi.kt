@@ -1,6 +1,8 @@
 package com.example.floatingflavors.app.feature.orders.data.remote
 
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.SimpleResponseDto
+import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingResponse
+import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingsListResponse
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrderDetailResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCountsResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersServerResponseDto
@@ -36,4 +38,16 @@ interface OrdersApi {
         @Field("order_id") orderId: Int,
         @Field("status") status: String
     ): SimpleResponseDto
+
+    // 🔥 BOOKINGS
+    @GET("get_event_bookings.php")
+    suspend fun getEventBookings(): AdminBookingsListResponse
+
+    @FormUrlEncoded
+    @POST("update_booking_status.php")
+    suspend fun updateBookingStatus(
+        @Field("booking_id") bookingId: String,
+        @Field("status") status: String
+    ): SimpleResponseDto
+
 }

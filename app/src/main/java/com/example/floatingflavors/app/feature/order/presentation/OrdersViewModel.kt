@@ -2,6 +2,7 @@ package com.example.floatingflavors.app.feature.orders.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingDto
 import com.example.floatingflavors.app.feature.orders.data.OrdersRepository
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
 import kotlinx.coroutines.Job
@@ -36,6 +37,8 @@ class OrdersViewModel(
     // Debounced query for UI filtering
     private val _debouncedQuery = MutableStateFlow("")
     private var debounceJob: Job? = null
+
+    private val bookingMap = mutableMapOf<String, AdminBookingDto>()
 
     // Tab counts derived from _orders
     val tabCounts: StateFlow<Map<String, Int>> = orders
@@ -80,19 +83,57 @@ class OrdersViewModel(
         _selectedTab.value = tab
     }
 
+    private val _selectedBooking = MutableStateFlow<AdminBookingDto?>(null)
+    val selectedBooking: StateFlow<AdminBookingDto?> = _selectedBooking
+
+    fun selectBooking(order: OrderDto) {
+        val realId = order.bookingId ?: return
+        _selectedBooking.value = bookingMap[realId]
+    }
+
+    // 🔥 CORE LOGIC
     fun loadOrders() {
         viewModelScope.launch {
             _isLoading.value = true
-            _error.value = null
             try {
-                val resp = repository.getOrders()
-                if (resp.success) {
-                    _orders.value = resp.data ?: emptyList()
-                } else {
-                    _error.value = resp.message ?: "Failed to load orders"
+                val foodOrders = repository.getOrders().data ?: emptyList()
+
+                val bookings: List<AdminBookingDto> = repository.getEventBookings()
+
+                val bookingOrders: List<OrderDto> = bookings.map { booking ->
+                    // Convert booking.id (Int?) to String for map key
+                    val bookingIdStr = booking.id?.toString() ?: "0"
+
+                    // 🔥 SAVE booking for dialog usage
+                    bookingMap[bookingIdStr] = booking
+
+                    OrderDto(
+                        id = "B-${bookingIdStr}",
+                        customer_name =
+                            if (booking.booking_type == "EVENT")
+                                booking.event_name ?: "Event Booking"
+                            else
+                                booking.company_name ?: "Company Contract",
+                        status = when (booking.status) {
+                            "PENDING" -> "pending"
+                            "CONFIRMED" -> "active"
+                            "CANCELLED" -> "rejected"
+                            else -> "pending"
+                        },
+                        created_at = booking.created_at,
+                        time_ago = null,
+                        items = emptyList(),
+                        amount = null,
+                        distance = null,
+                        isBooking = true,
+                        bookingId = bookingIdStr
+                    )
                 }
+
+                _orders.value = foodOrders + bookingOrders
+
             } catch (e: Exception) {
-                _error.value = "Failed: ${e.message}"
+                _error.value = e.message
             } finally {
                 _isLoading.value = false
             }
@@ -172,12 +213,44 @@ class OrdersViewModel(
     }
 
     // helper used by dialog flows (keeps naming consistent)
-    fun updateStatusFromDialog(orderId: String, newStatus: String, onComplete: (Boolean, String?) -> Unit) {
-        updateOrderStatusOptimistic(orderId, newStatus, onComplete)
+    fun updateStatusFromDialog(
+        orderId: String,
+        newStatus: String,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                if (orderId.startsWith("B-")) {
+                    // 🔥 Booking
+                    val realId = orderId.removePrefix("B-")
+                    repository.updateBookingStatus(realId, newStatus.uppercase())
+                } else {
+                    // 🔥 Food order
+                    repository.updateOrderStatus(orderId.toInt(), newStatus)
+                }
+                onComplete(true, null)
+            } catch (e: Exception) {
+                onComplete(false, e.message)
+            }
+        }
+    }
+
+    fun clearBooking() {
+        _selectedBooking.value = null
+    }
+
+    fun updateBookingStatus(bookingId: String, status: String) {
+        viewModelScope.launch {
+            try {
+                repository.updateBookingStatus(bookingId, status)
+                clearBooking()
+                loadOrders() // refresh list
+            } catch (e: Exception) {
+                _error.value = e.message
+            }
+        }
     }
 }
-
-
 
 //// file: OrdersViewModel.kt (same package com.example.floatingflavors.app.feature.orders.presentation)
 //package com.example.floatingflavors.app.feature.orders.presentation
