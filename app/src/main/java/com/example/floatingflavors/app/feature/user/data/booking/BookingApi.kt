@@ -5,6 +5,7 @@ import com.example.floatingflavors.app.feature.user.data.booking.dto.BookingResp
 import com.example.floatingflavors.app.feature.user.data.booking.dto.CommonResponseDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.MenuBookingResponseDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.SaveBookingMenuRequestDto
+import com.example.floatingflavors.app.feature.user.data.booking.dto.SmartFilterRequestDto
 import retrofit2.http.Body
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
@@ -47,5 +48,11 @@ interface BookingApi {
     suspend fun saveBookingMenu(
         @Body request: SaveBookingMenuRequestDto
     ): CommonResponseDto
+
+    @POST("get_menu_smart_filter.php")
+    suspend fun getMenuBySmartFilter(
+        @Body request: SmartFilterRequestDto
+    ): MenuBookingResponseDto
+
 
 }

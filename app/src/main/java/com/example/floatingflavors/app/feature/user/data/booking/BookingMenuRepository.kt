@@ -4,6 +4,8 @@ import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.BookingMenuItemDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.SaveBookingMenuRequestDto
+import com.example.floatingflavors.app.feature.user.data.booking.dto.SmartFilterRequestDto
+import com.example.floatingflavors.app.feature.user.presentation.booking.SmartFilterState
 
 class BookingMenuRepository {
 
@@ -24,4 +26,18 @@ class BookingMenuRepository {
             SaveBookingMenuRequestDto(bookingId, items)
         )
     }
+
+    suspend fun fetchMenuBySmartFilter(
+        state: SmartFilterState
+    ): List<MenuItemDto> {
+        val res = api.getMenuBySmartFilter(
+            SmartFilterRequestDto(
+                dietary = state.dietary.toList(),
+                cuisines = state.cuisines.toList()
+            )
+        )
+        if (!res.success) throw Exception("Filter failed")
+        return res.data
+    }
+
 }

@@ -38,6 +38,7 @@ private val ChipBorderColor = Color(0xFFE5E7EB)
 
 /* ---------------- MAIN SCREEN ---------------- */
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventMenuScreen(
     bookingId: Int,
@@ -48,6 +49,10 @@ fun EventMenuScreen(
 
     var selectedCategory by remember { mutableStateOf("All") }
     var selectedIngredients by remember { mutableStateOf(setOf<String>()) }
+
+    var showSmartFilter by remember { mutableStateOf(false) }
+    var smartFilterState by remember { mutableStateOf(SmartFilterState()) }
+
 
     LaunchedEffect(Unit) { vm.loadMenu() }
 
@@ -93,6 +98,9 @@ fun EventMenuScreen(
                                     selectedIngredients - it
                                 else
                                     selectedIngredients + it
+                        },
+                        onSmartFilterClick = {
+                            showSmartFilter = true
                         }
                     )
                 }
@@ -127,58 +135,68 @@ fun EventMenuScreen(
             )
         }
     }
+
+    if (showSmartFilter) {
+        ModalBottomSheet(
+            onDismissRequest = { showSmartFilter = false },
+            dragHandle = null,
+            containerColor = Color.Transparent
+        ) {
+        SmartFilterBottomSheet(
+                initialState = smartFilterState,
+                onDismiss = { showSmartFilter = false },
+                onApply = { state ->
+                    smartFilterState = state
+                    showSmartFilter = false
+                    vm.applySmartFilter(state)   // 🔥 THIS LINE WAS MISSING
+                }
+            )
+        }
+    }
+
 }
 
-/* ---------------- HEADER ---------------- */
+/* ---------------- SIMPLE HEADER (OUR MENU STYLE) ---------------- */
 
 @Composable
 private fun HeaderSection(
-    onBack: () -> Unit,
-//    onNotification: () -> Unit
+    onBack: () -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(150.dp)
-            .background(
-                Purple,
-                RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
-            )
-            .padding(16.dp)
+            .background(Color.Transparent)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
+
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.size(36.dp)
         ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, null, tint = Color.White)
-                }
-//                IconButton(onClick = onNotification) {
-//                    Icon(Icons.Default.Notifications, null, tint = Color.White)
-//                }
-            }
-
-            Column {
-                Text(
-                    "Select Menu for Booking",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    "Choose dishes for your event / contract",
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                tint = Color.Black
+            )
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "Select Menu for Booking",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Text(
+            text = "Choose dishes for your event / contract",
+            fontSize = 13.sp,
+            color = Color.Gray
+        )
     }
 }
+
 
 /* ---------------- CATEGORY ---------------- */
 
@@ -206,25 +224,27 @@ private fun CategoryChip(
     onSelect: (String) -> Unit
 ) {
     val selected = selectedCategory == label
+    val primaryGreen = Color(0xFF13EC5B)
 
     Box(
         modifier = Modifier
             .padding(end = 8.dp)
             .background(
-                if (selected) Purple else CardBg,
+                if (selected) primaryGreen else Color(0xFFE5E7EB),
                 RoundedCornerShape(50)
             )
-            .border(1.dp, ChipBorderColor, RoundedCornerShape(50))
             .clickable { onSelect(label) }
             .padding(horizontal = 18.dp, vertical = 10.dp)
     ) {
         Text(
             label,
-            color = if (selected) Color.White else Color.Black,
-            fontSize = 13.sp
+            color = if (selected) Color.Black else Color.DarkGray,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
         )
     }
 }
+
 
 /* ---------------- SEARCH ---------------- */
 
@@ -249,7 +269,8 @@ private fun SearchBar() {
 @Composable
 private fun AiSuggestionSection(
     selected: Set<String>,
-    onToggle: (String) -> Unit
+    onToggle: (String) -> Unit,
+    onSmartFilterClick: () -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
 
@@ -258,7 +279,12 @@ private fun AiSuggestionSection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("AI SUGGESTED INGREDIENTS", fontSize = 12.sp, color = Color.Gray)
-            Text("Smart Filter", color = Purple, fontSize = 12.sp)
+            Text(
+                "Smart Filter",
+                color = Purple,
+                fontSize = 12.sp,
+                modifier = Modifier.clickable { onSmartFilterClick() }
+            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -287,23 +313,26 @@ private fun FilterChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val primaryGreen = Color(0xFF13EC5B)
+
     Box(
         modifier = Modifier
             .background(
-                if (selected) Purple else CardBg,
+                if (selected) primaryGreen else Color(0xFFE5E7EB),
                 RoundedCornerShape(50)
             )
-            .border(1.dp, ChipBorderColor, RoundedCornerShape(50))
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Text(
-            label,
+            text = label,
             fontSize = 13.sp,
-            color = if (selected) Color.White else Color.Black
+            fontWeight = FontWeight.Medium,
+            color = if (selected) Color.Black else Color.DarkGray
         )
     }
 }
+
 
 /* ---------------- SECTION TITLE ---------------- */
 

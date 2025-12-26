@@ -79,4 +79,13 @@ class EventMenuViewModel(
             }
         }
     }
+
+    fun applySmartFilter(state: SmartFilterState) {
+        viewModelScope.launch {
+            val filtered = repo.fetchMenuBySmartFilter(state)
+            _uiState.value = _uiState.value.copy(menu = filtered)
+        }
+    }
+
+
 }

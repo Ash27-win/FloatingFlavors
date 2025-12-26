@@ -32,6 +32,10 @@ fun UserShell(
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
 
+    val hideBottomBar =
+        currentRoute?.startsWith("user_booking_menu") == true
+
+
     // 🔥 SINGLE SOURCE OF TRUTH
     val addressViewModel = remember {
         AddressViewModel(AddressRepository(NetworkClient.addressApi))
@@ -43,57 +47,59 @@ fun UserShell(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            if (!hideBottomBar) {
+                NavigationBar {
 
-                NavigationBarItem(
-                    selected = currentRoute == Screen.UserHome.route,
-                    onClick = {
-                        navController.navigate(Screen.UserHome.route) {
-                            popUpTo(Screen.UserHome.route)
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Default.Home, null) },
-                    label = { Text("Home") }
-                )
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.UserHome.route,
+                        onClick = {
+                            navController.navigate(Screen.UserHome.route) {
+                                popUpTo(Screen.UserHome.route)
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.Home, null) },
+                        label = { Text("Home") }
+                    )
 
-                NavigationBarItem(
-                    selected = currentRoute == Screen.UserMenuGrid.route,
-                    onClick = {
-                        navController.navigate(Screen.UserMenuGrid.route) {
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Default.RestaurantMenu, null) },
-                    label = { Text("Menu") }
-                )
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.UserMenuGrid.route,
+                        onClick = {
+                            navController.navigate(Screen.UserMenuGrid.route) {
+                                launchSingleTop = true
+                            }
+                        },
+                        icon = { Icon(Icons.Default.RestaurantMenu, null) },
+                        label = { Text("Menu") }
+                    )
 
-                NavigationBarItem(
-                    selected = currentRoute == Screen.UserBooking.route,
-                    onClick = {
-                        navController.navigate(Screen.UserBooking.route)
-                    },
-                    icon = { Icon(Icons.Default.EventAvailable, null) },
-                    label = { Text("Booking") }
-                )
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.UserBooking.route,
+                        onClick = {
+                            navController.navigate(Screen.UserBooking.route)
+                        },
+                        icon = { Icon(Icons.Default.EventAvailable, null) },
+                        label = { Text("Booking") }
+                    )
 
-                NavigationBarItem(
-                    selected = currentRoute == Screen.UserOrders.route,
-                    onClick = {
-                        navController.navigate(Screen.UserOrders.route)
-                    },
-                    icon = { Icon(Icons.Default.ReceiptLong, null) },
-                    label = { Text("Orders") }
-                )
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.UserOrders.route,
+                        onClick = {
+                            navController.navigate(Screen.UserOrders.route)
+                        },
+                        icon = { Icon(Icons.Default.ReceiptLong, null) },
+                        label = { Text("Orders") }
+                    )
 
-                NavigationBarItem(
-                    selected = currentRoute == Screen.UserProfile.route,
-                    onClick = {
-                        navController.navigate(Screen.UserProfile.route)
-                    },
-                    icon = { Icon(Icons.Default.Settings, null) },
-                    label = { Text("Settings") }
-                )
+                    NavigationBarItem(
+                        selected = currentRoute == Screen.UserProfile.route,
+                        onClick = {
+                            navController.navigate(Screen.UserProfile.route)
+                        },
+                        icon = { Icon(Icons.Default.Settings, null) },
+                        label = { Text("Settings") }
+                    )
+                }
             }
         }
     ) { padding ->
@@ -160,7 +166,12 @@ fun UserShell(
 
                 EventMenuScreen(
                     bookingId = bookingId,
-                    onBack = { navController.popBackStack() }
+                    onBack = {
+                        navController.navigate(Screen.UserHome.route) {
+                            popUpTo(Screen.UserHome.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
 
