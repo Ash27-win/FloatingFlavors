@@ -1,7 +1,9 @@
 package com.example.floatingflavors.app.feature.user.data.booking
 
 import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingResponse
+import com.example.floatingflavors.app.feature.user.data.booking.dto.BookingMenuItemsResponse
 import com.example.floatingflavors.app.feature.user.data.booking.dto.BookingResponseDto
+import com.example.floatingflavors.app.feature.user.data.booking.dto.BookingReviewResponseDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.CommonResponseDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.MenuBookingResponseDto
 import com.example.floatingflavors.app.feature.user.data.booking.dto.SaveBookingMenuRequestDto
@@ -53,6 +55,19 @@ interface BookingApi {
     suspend fun getMenuBySmartFilter(
         @Body request: SmartFilterRequestDto
     ): MenuBookingResponseDto
+
+    @GET("get_booking_menu_summary.php")
+    suspend fun getBookingReview(
+        @Query("booking_id") bookingId: Int
+    ): BookingReviewResponseDto
+
+    // EVEN USER CAN LOGOUT AGAIN LOGIN EVENT MENU LIST SHOW API
+    @GET("get_booking_menu_items.php")
+    suspend fun getBookingMenuItems(
+        @Query("booking_id") bookingId: Int
+    ): BookingMenuItemsResponse
+
+
 
 
 }

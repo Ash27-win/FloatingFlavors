@@ -1,6 +1,6 @@
 package com.example.floatingflavors.app.feature.user.presentation.booking
 
-import android.R.attr.id
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.idAsInt
@@ -18,10 +18,34 @@ class EventMenuViewModel(
     private val _uiState = MutableStateFlow(EventMenuUiState())
     val uiState: StateFlow<EventMenuUiState> = _uiState
 
-    fun loadMenu() {
+    /**
+     * 🔹 Called when EventMenuScreen opens
+     * Restores menu + previously selected quantities from DB
+     */
+    fun loadMenuWithRestore(bookingId: Int) {
         viewModelScope.launch {
-            val menu = repo.fetchMenu()
-            _uiState.value = _uiState.value.copy(menu = menu)
+            try {
+                // 1️⃣ Load menu
+                val menu = repo.fetchMenu()
+
+                // 2️⃣ Load saved selections
+                val savedSelection = repo.fetchSavedMenuSelection(bookingId)
+
+                // 3️⃣ Calculate total
+                val total = savedSelection.entries.sumOf { (menuId, qty) ->
+                    val item = menu.firstOrNull { it.idAsInt == menuId }
+                    (item?.priceAsDouble ?: 0.0) * qty
+                }
+
+                // 4️⃣ Update UI
+                _uiState.value = EventMenuUiState(
+                    menu = menu,
+                    selected = savedSelection,
+                    totalAmount = total
+                )
+            } catch (e: Exception) {
+                Log.e("LOAD_MENU", "Failed to load menu with restore", e)
+            }
         }
     }
 
@@ -38,15 +62,28 @@ class EventMenuViewModel(
         recalc(selected)
     }
 
+    //CHECKBOX LOGIC
+    fun toggleItem(menuId: Int) {
+        val selected = _uiState.value.selected.toMutableMap()
+
+        if (selected.containsKey(menuId)) {
+            // ❌ Checkbox UNCHECKED → remove item
+            selected.remove(menuId)
+        } else {
+            // ✅ Checkbox CHECKED → add with qty = 1
+            selected[menuId] = 1
+        }
+
+        recalc(selected)
+    }
+
+
     private fun recalc(selected: Map<Int, Int>) {
         val total = selected.entries.sumOf { (id, qty) ->
-            // Find the menu item and convert String? price to Double safely
             val menuItem = _uiState.value.menu.firstOrNull {
                 it.id?.toIntOrNull() == id
             }
-
-            val price = menuItem?.price?.toDoubleOrNull() ?: 0.0
-            price * qty
+            (menuItem?.price?.toDoubleOrNull() ?: 0.0) * qty
         }
 
         _uiState.value = _uiState.value.copy(
@@ -55,27 +92,29 @@ class EventMenuViewModel(
         )
     }
 
+    /**
+     * 🔹 Called ONLY when user clicks "Review Selection"
+     */
     fun saveBookingMenu(bookingId: Int) {
         val items = _uiState.value.selected.mapNotNull { (menuId, quantity) ->
-            // Find the menu item
             val menuItem = _uiState.value.menu.firstOrNull {
-                it.idAsInt == id
-            }
-            val price = menuItem?.priceAsDouble ?: 0.0
-
-            // Convert menuId to Int for BookingMenuItemDto
-            val menuItemId = menuItem?.id?.toIntOrNull() ?: return@mapNotNull null
+                it.idAsInt == menuId
+            } ?: return@mapNotNull null
 
             BookingMenuItemDto(
-                menu_item_id = menuItemId,
+                menu_item_id = menuId,
                 quantity = quantity,
-                price = price
+                price = menuItem.priceAsDouble ?: 0.0
             )
         }
 
         if (items.isNotEmpty()) {
             viewModelScope.launch {
-                repo.saveBookingMenu(bookingId, items)
+                try {
+                    repo.saveBookingMenu(bookingId, items)
+                } catch (e: Exception) {
+                    Log.e("SAVE_MENU", "Failed to save booking menu", e)
+                }
             }
         }
     }
@@ -86,6 +125,4 @@ class EventMenuViewModel(
             _uiState.value = _uiState.value.copy(menu = filtered)
         }
     }
-
-
 }

@@ -139,8 +139,9 @@ fun UserShell(
                     vm = bookingVm,
                     userId = 1,
                     onNavigateToMenu = { bookingId ->
+                        // bookingId is already Int from BookingViewModel's navigation
                         navController.navigate(
-                            Screen.UserBookingMenu.createRoute(bookingId.toIntOrNull() ?: 0)
+                            Screen.UserBookingMenu.createRoute(bookingId)
                         )
                     },
                     onShowMessage = { message ->

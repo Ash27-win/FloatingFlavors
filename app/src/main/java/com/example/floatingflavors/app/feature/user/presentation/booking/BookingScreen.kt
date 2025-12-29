@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 fun BookingScreen(
     vm: BookingViewModel,
     userId: Int,
-    onNavigateToMenu: (String) -> Unit,
+    onNavigateToMenu: (Int) -> Unit,  // Changed from String to Int
     onShowMessage: (String) -> Unit
 ) {
     // Get screen configuration for responsive design
@@ -85,7 +85,7 @@ fun BookingScreen(
 fun ResponsiveBookingStatusUI(
     bookingState: BookingViewModel.BookingState.Active,
     userId: Int,
-    onNavigateToMenu: (String) -> Unit,
+    onNavigateToMenu: (Int) -> Unit,  // Changed from String to Int
     onBackToBooking: () -> Unit,
     onShowMessage: (String) -> Unit,
     vm: BookingViewModel,
@@ -99,7 +99,11 @@ fun ResponsiveBookingStatusUI(
                 // Navigate to menu after a short delay
                 coroutineScope.launch {
                     delay(2000)
-                    onNavigateToMenu(bookingState.bookingId)
+                    // Convert bookingId from String to Int for navigation
+                    val bookingId = bookingState.bookingId.toIntOrNull()
+                    if (bookingId != null) {
+                        onNavigateToMenu(bookingId)  // This triggers navigation to EventMenuScreen
+                    }
                 }
             }
             "CANCELLED" -> {
@@ -161,7 +165,7 @@ fun ResponsiveBookingStatusUI(
 
         val statusMessage = when (bookingState.status) {
             "PENDING" -> "Your booking is pending admin approval."
-            "CONFIRMED" -> "Your booking has been confirmed!"
+            "CONFIRMED" -> "Your booking has been confirmed! Navigating to menu selection..."
             "CANCELLED" -> "This booking was cancelled by admin."
             else -> "Unknown status"
         }

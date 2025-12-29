@@ -40,4 +40,20 @@ class BookingMenuRepository {
         return res.data
     }
 
+    suspend fun getReview(bookingId: Int) =
+        api.getBookingReview(bookingId)
+
+    suspend fun fetchSavedMenuSelection(bookingId: Int): Map<Int, Int> {
+        val res = api.getBookingMenuItems(bookingId)
+
+        if (!res.success) return emptyMap()
+
+        return res.data.associate {
+            it.menu_item_id to it.quantity
+        }
+    }
+
+
+
+
 }

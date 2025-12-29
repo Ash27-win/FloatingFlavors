@@ -144,7 +144,7 @@ class BookingViewModel(
 
     private fun mapBookingToState(booking: com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingDto): BookingState.Active {
         return BookingState.Active(
-            bookingId = booking.id.toString(),
+            bookingId = booking.id?.toString() ?: booking.booking_id?.toString() ?: "0", // FIXED: Handle both id and booking_id
             bookingType = booking.booking_type ?: "UNKNOWN",
             details = if (booking.booking_type == "EVENT")
                 "${booking.event_name ?: "Event"} - ${booking.people_count ?: 0} people"

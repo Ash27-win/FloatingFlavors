@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class AdminBookingDto(
     @SerializedName("id") val id: Int?,
     @SerializedName("user_id") val user_id: Int?,
+    @SerializedName("booking_id") val booking_id: String?,
     @SerializedName("booking_type") val booking_type: String?,
     @SerializedName("event_type") val event_type: String?,
     @SerializedName("event_name") val event_name: String?,

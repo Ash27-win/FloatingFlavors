@@ -52,9 +52,13 @@ fun EventMenuScreen(
 
     var showSmartFilter by remember { mutableStateOf(false) }
     var smartFilterState by remember { mutableStateOf(SmartFilterState()) }
+    var showReviewSheet by remember { mutableStateOf(false) }
 
 
-    LaunchedEffect(Unit) { vm.loadMenu() }
+    LaunchedEffect(bookingId) {
+        vm.loadMenuWithRestore(bookingId)
+    }
+
 
     // 🔹 CATEGORY FILTER
     val filteredMenu = remember(state.menu, selectedCategory) {
@@ -113,11 +117,24 @@ fun EventMenuScreen(
                 }
 
                 items(filteredMenu) { item ->
+
+                    val menuId = item.idAsInt ?: return@items
+                    val isChecked = state.selected.containsKey(menuId)
+                    val quantity = state.selected[menuId] ?: 0
+
                     MenuItemCard(
                         item = item,
-                        quantity = state.selected[item.idAsInt ?: -1] ?: 0,
-                        onAdd = { item.idAsInt?.let(vm::addItem) },
-                        onRemove = { item.idAsInt?.let(vm::removeItem) }
+                        isChecked = isChecked,
+                        quantity = quantity,
+                        onCheckedChange = {
+                            vm.toggleItem(menuId)
+                        },
+                        onAdd = {
+                            vm.addItem(menuId)
+                        },
+                        onRemove = {
+                            vm.removeItem(menuId)
+                        }
                     )
                 }
             }
@@ -128,8 +145,8 @@ fun EventMenuScreen(
                 total = state.totalAmount,
                 itemCount = state.selected.values.sum(),
                 onClick = {
-                    // 🔥 NEXT STEP: open bottom sheet review
                     vm.saveBookingMenu(bookingId)
+                    showReviewSheet = true    // 👈 THIS opens review
                 },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
@@ -153,6 +170,22 @@ fun EventMenuScreen(
             )
         }
     }
+
+    if (showReviewSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showReviewSheet = false }
+        ) {
+            ReviewSelectionBottomSheet(
+                bookingId = bookingId,
+                onConfirm = {
+//                    vm.confirmBooking(bookingId)
+                    showReviewSheet = false
+                }
+            )
+        }
+    }
+
+
 
 }
 
@@ -357,7 +390,9 @@ private fun SectionTitle(
 @Composable
 private fun MenuItemCard(
     item: MenuItemDto,
+    isChecked: Boolean,
     quantity: Int,
+    onCheckedChange: () -> Unit,
     onAdd: () -> Unit,
     onRemove: () -> Unit
 ) {
@@ -372,12 +407,20 @@ private fun MenuItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
+            // 🔹 CHECKBOX
+            Checkbox(
+                checked = isChecked,
+                onCheckedChange = { onCheckedChange() }
+            )
+
+            Spacer(Modifier.width(8.dp))
+
             AsyncImage(
                 model = item.image_full,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(14.dp))
             )
 
             Spacer(Modifier.width(12.dp))
@@ -387,10 +430,14 @@ private fun MenuItemCard(
                 Text("₹${item.price}", color = Color(0xFF16A34A))
             }
 
-            QuantityControl(quantity, onAdd, onRemove)
+            // 🔹 Quantity only if checkbox selected
+            if (isChecked) {
+                QuantityControl(quantity, onAdd, onRemove)
+            }
         }
     }
 }
+
 
 /* ---------------- QUANTITY ---------------- */
 
