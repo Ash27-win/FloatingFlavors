@@ -12,17 +12,28 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.user.data.booking.BookingRepository
+import com.example.floatingflavors.app.feature.user.data.booking_checkout.AddressCheckoutRepository
 import com.example.floatingflavors.app.feature.user.data.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
 import com.example.floatingflavors.app.feature.user.presentation.booking.BookingScreen
 import com.example.floatingflavors.app.feature.user.presentation.booking.BookingViewModel
 import com.example.floatingflavors.app.feature.user.presentation.booking.EventMenuScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutAddressScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutAddressViewModel
 import com.example.floatingflavors.app.feature.user.presentation.membership.MembershipScreen
 import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
 import com.example.floatingflavors.app.feature.user.presentation.settings.*
 import com.example.floatingflavors.app.feature.user.presentation.settings.edit.*
 import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.*
 import kotlinx.coroutines.launch
+import androidx.compose.animation.*
+import com.example.floatingflavors.app.feature.user.data.booking_checkout.CheckoutSummaryRepository
+import com.example.floatingflavors.app.feature.user.data.booking_checkout.PaymentRepository
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutSummaryViewModel
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutPaymentScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutPaymentViewModel
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutSummaryScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.OrderSuccessScreen
 
 @Composable
 fun UserShell(
@@ -44,6 +55,28 @@ fun UserShell(
     val editAddressViewModel = remember {
         EditAddressViewModel(AddressRepository(NetworkClient.addressApi))
     }
+
+    // CHECKOUT SCREEN ADDRESS
+    val checkoutAddressVm = remember {
+        CheckoutAddressViewModel(
+            AddressCheckoutRepository(NetworkClient.addressCheckoutApi)
+        )
+    }
+
+    val checkoutSummaryVm = remember {
+        CheckoutSummaryViewModel(
+            CheckoutSummaryRepository(NetworkClient.checkoutSummaryApi)
+        )
+    }
+
+    val checkoutPaymentVm = remember {
+        CheckoutPaymentViewModel(
+            PaymentRepository(NetworkClient.paymentApi)
+        )
+    }
+
+
+
 
     Scaffold(
         bottomBar = {
@@ -172,9 +205,125 @@ fun UserShell(
                             popUpTo(Screen.UserHome.route) { inclusive = true }
                             launchSingleTop = true
                         }
+                    },
+                    onNavigateToCheckout = { bookingId ->
+                        navController.navigate(
+                            Screen.CheckoutAddress.createRoute(bookingId)
+                        )
                     }
                 )
             }
+
+            // CHECKOUT SCREEN ADDRESS
+            composable(
+                route = Screen.CheckoutAddress.route,
+                arguments = listOf(navArgument("bookingId") { type = NavType.IntType }),
+                enterTransition = { slideInHorizontally { it } },
+                exitTransition = { slideOutHorizontally { -it } }
+            ) { entry ->
+                val bookingId = entry.arguments!!.getInt("bookingId")
+
+                CheckoutAddressScreen(
+                    vm = checkoutAddressVm,
+                    userId = 1,
+                    onBack = { navController.popBackStack() },
+                    onAddAddress = {
+                        navController.navigate(Screen.AddAddress.route)
+                    },
+                    onContinue = { addressId ->
+                        navController.navigate(
+                            Screen.CheckoutSummary.createRoute(bookingId, addressId)
+                        )
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.CheckoutSummary.route,
+                arguments = listOf(
+                    navArgument("bookingId") { type = NavType.IntType },
+                    navArgument("addressId") { type = NavType.IntType }
+                ),
+                enterTransition = { slideInHorizontally { it } },
+                exitTransition = { slideOutHorizontally { -it } },
+                popEnterTransition = { slideInHorizontally { -it } },
+                popExitTransition = { slideOutHorizontally { it } }
+            ) { entry ->
+                val bookingId = entry.arguments!!.getInt("bookingId")
+                val addressId = entry.arguments!!.getInt("addressId")
+
+                CheckoutSummaryScreen(
+                    vm = checkoutSummaryVm,
+                    userId = 1,
+                    bookingId = bookingId,
+                    addressId = addressId,
+                    onBack = { navController.popBackStack() },
+                    onChangeAddress = {
+                        navController.popBackStack()
+                    },
+                    onContinue = {
+                        navController.navigate(
+                            Screen.CheckoutPayment.createRoute(bookingId, addressId)
+                        )
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.CheckoutPayment.route,
+                arguments = listOf(
+                    navArgument("bookingId") { type = NavType.IntType },
+                    navArgument("addressId") { type = NavType.IntType }
+                ),
+                enterTransition = { slideInHorizontally { it } },
+                popExitTransition = { slideOutHorizontally { it } }
+            ) { entry ->
+
+                val bookingId = entry.arguments!!.getInt("bookingId")
+
+                CheckoutPaymentScreen(
+                    bookingId = bookingId,
+                    totalAmount = checkoutSummaryVm.uiState.total,
+                    vm = checkoutPaymentVm,
+                    onBack = { navController.popBackStack() },
+                    onPaymentSuccess = { txnId, method ->
+                        navController.navigate(
+                            Screen.OrderSuccess.createRoute(
+                                txnId = txnId,
+                                method = method
+                            )
+                        )
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.OrderSuccess.route,
+                arguments = listOf(
+                    navArgument("txnId") { type = NavType.StringType },
+                    navArgument("method") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    fadeIn() + scaleIn(initialScale = 0.9f)
+                }
+            ) { entry ->
+
+                val txnId = entry.arguments!!.getString("txnId")!!
+                val method = entry.arguments!!.getString("method")!!
+
+                OrderSuccessScreen(
+                    transactionId = txnId,
+                    paymentMethod = method,
+                    onBack = { navController.popBackStack() },
+                    onBackToHome = {
+                        navController.navigate(Screen.UserHome.route) {
+                            popUpTo(Screen.UserHome.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+
 
 
             composable(Screen.UserOrders.route) {

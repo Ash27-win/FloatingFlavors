@@ -43,6 +43,7 @@ private val ChipBorderColor = Color(0xFFE5E7EB)
 fun EventMenuScreen(
     bookingId: Int,
     onBack: () -> Unit= {}, //DEFAULT VALUE
+    onNavigateToCheckout: (Int) -> Unit,   // 🔥 ADD THIS
     vm: EventMenuViewModel = viewModel()
 ) {
     val state by vm.uiState.collectAsState()
@@ -178,12 +179,15 @@ fun EventMenuScreen(
             ReviewSelectionBottomSheet(
                 bookingId = bookingId,
                 onConfirm = {
-//                    vm.confirmBooking(bookingId)
                     showReviewSheet = false
+
+                    // 🔥 THIS IS THE BOOKING FLOW CONNECTION
+                    onNavigateToCheckout(bookingId)
                 }
             )
         }
     }
+
 
 
 

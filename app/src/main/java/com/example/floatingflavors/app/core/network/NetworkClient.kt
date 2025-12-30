@@ -6,6 +6,9 @@ import com.example.floatingflavors.app.feature.auth.data.remote.AuthApi
 import com.example.floatingflavors.app.feature.menu.data.remote.MenuApi // NEW
 import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import com.example.floatingflavors.app.feature.user.data.booking.BookingApi
+import com.example.floatingflavors.app.feature.user.data.booking_checkout.AddressCheckoutApi
+import com.example.floatingflavors.app.feature.user.data.booking_checkout.CheckoutSummaryApi
+import com.example.floatingflavors.app.feature.user.data.booking_checkout.PaymentApi
 import com.example.floatingflavors.app.feature.user.data.cart.CartApi
 import com.example.floatingflavors.app.feature.user.data.cart.CheckoutApi
 import com.example.floatingflavors.app.feature.user.data.membership.MembershipApi
@@ -83,6 +86,19 @@ object NetworkClient {
     val bookingApi: BookingApi by lazy {
         retrofit.create(BookingApi::class.java)
     }
+
+    // CHECKOUT SCREEN LOGIC
+    val addressCheckoutApi: AddressCheckoutApi by lazy {
+        retrofit.create(AddressCheckoutApi::class.java)
+    }
+
+    val checkoutSummaryApi: CheckoutSummaryApi =
+        retrofit.create(CheckoutSummaryApi::class.java)
+
+    val paymentApi: PaymentApi by lazy {
+        retrofit.create(PaymentApi::class.java)
+    }
+
 
 
 }

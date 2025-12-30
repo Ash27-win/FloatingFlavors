@@ -36,6 +36,28 @@ sealed class Screen(val route: String) {
         fun createRoute(bookingId: Int) = "user_booking_menu/$bookingId"
     }
 
+    // CHECKOUT SCREENS ADDRESS, SUMMARY, PAYMENT
+    object CheckoutAddress : Screen("checkout_address/{bookingId}") {
+        fun createRoute(bookingId: Int): String =
+            "checkout_address/$bookingId"
+    }
+
+    object CheckoutSummary : Screen("checkout_summary/{bookingId}/{addressId}") {
+        fun createRoute(bookingId: Int, addressId: Int): String =
+            "checkout_summary/$bookingId/$addressId"
+    }
+
+    object CheckoutPayment : Screen("checkout_payment/{bookingId}/{addressId}") {
+        fun createRoute(bookingId: Int, addressId: Int): String =
+            "checkout_payment/$bookingId/$addressId"
+    }
+
+    object OrderSuccess : Screen("order_success/{txnId}/{method}") {
+        fun createRoute(txnId: String, method: String): String =
+            "order_success/$txnId/$method"
+    }
+
+
     object EditProfile : Screen("edit_profile")
 
     object SavedAddresses : Screen("saved_addresses")

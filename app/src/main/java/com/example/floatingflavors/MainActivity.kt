@@ -1,5 +1,6 @@
 package com.example.floatingflavors
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import com.example.floatingflavors.app.core.navigation.AppShell
 import com.example.floatingflavors.app.core.navigation.Screen
 import com.example.floatingflavors.app.core.ui.theme.FloatingFlavorsTheme
 import com.example.floatingflavors.app.core.SessionManager
+import com.example.floatingflavors.app.core.di.PaymentResultBus
 
 
 class MainActivity : ComponentActivity() {
@@ -24,6 +26,23 @@ class MainActivity : ComponentActivity() {
             FloatingFlavorsApp()
         }
     }
+
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 1001) {
+            val response = data?.getStringExtra("response") ?: ""
+            if (response.contains("SUCCESS", true)) {
+                PaymentResultBus.emit("SUCCESS")
+            } else {
+                PaymentResultBus.emit("FAILURE")
+            }
+        }
+    }
 }
 
 @Composable
@@ -32,6 +51,7 @@ fun FloatingFlavorsApp() {
         AppNavHost() // root flow: Splash -> Onboarding -> Login -> AdminRoot/UserRoot
     }
 }
+
 
 
 
