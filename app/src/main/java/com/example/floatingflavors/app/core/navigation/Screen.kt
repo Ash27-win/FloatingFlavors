@@ -27,6 +27,11 @@ sealed class Screen(val route: String) {
     object UserMenuGrid : Screen("user_menu_grid")
     object UserBooking : Screen("user_booking")
     object UserOrders : Screen("user_orders")
+
+    object UserOrderDetails : Screen("user_order_details/{orderId}") {
+        fun createRoute(orderId: String) =
+            "user_order_details/$orderId"
+    }
     object UserProfile : Screen("user_profile")
 
     object UserMembership : Screen("user_membership")

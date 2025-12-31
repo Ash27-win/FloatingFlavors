@@ -21,13 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import com.example.floatingflavors.app.feature.menu.presentation.MenuViewModel
 import com.example.floatingflavors.app.feature.user.data.cart.dto.CartItemDto
 import com.example.floatingflavors.app.feature.user.presentation.menu.cart.*
 import com.example.floatingflavors.app.feature.user.presentation.menu.checkout.CheckoutBottomSheet
-import com.example.floatingflavors.app.feature.user.presentation.order.OrderSuccessScreen
+import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.OrderSuccessScreen
 
 @Composable
 fun UserMenuGridScreen(
@@ -206,9 +205,16 @@ fun UserMenuGridScreen(
         }
 
         if (showOrderSuccess) {
-            OrderSuccessScreen {
-                showOrderSuccess = false
-            }
+            AlertDialog(
+                onDismissRequest = { showOrderSuccess = false },
+                confirmButton = {
+                    TextButton(onClick = { showOrderSuccess = false }) {
+                        Text("OK")
+                    }
+                },
+                title = { Text("Order Placed") },
+                text = { Text("Your order has been placed successfully!") }
+            )
         }
     }
 }

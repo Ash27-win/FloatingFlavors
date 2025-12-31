@@ -34,6 +34,13 @@ import com.example.floatingflavors.app.feature.user.presentation.booking.booking
 import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutPaymentViewModel
 import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutSummaryScreen
 import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.OrderSuccessScreen
+import com.example.floatingflavors.app.feature.orders.data.OrdersRepository
+import com.example.floatingflavors.app.feature.user.data.order.UserOrdersRepository
+import com.example.floatingflavors.app.feature.user.presentation.order.OrderDetailsScreen
+import com.example.floatingflavors.app.feature.user.presentation.order.OrderDetailsViewModel
+import com.example.floatingflavors.app.feature.user.presentation.order.UserOrdersScreen
+import com.example.floatingflavors.app.feature.user.presentation.order.UserOrdersViewModel
+
 
 @Composable
 fun UserShell(
@@ -323,12 +330,55 @@ fun UserShell(
                 )
             }
 
-
-
-
             composable(Screen.UserOrders.route) {
-                Text("Orders & Tracking Screen")
+
+                val vm = remember {
+                    UserOrdersViewModel(
+                        ordersRepository = OrdersRepository(),
+                        bookingRepository = BookingRepository(NetworkClient.bookingApi),
+                        userId = 1
+                    )
+                }
+
+                UserOrdersScreen(
+                    viewModel = vm,
+                    onOpenOrderDetails = { orderId ->
+                        navController.navigate(
+                            Screen.UserOrderDetails.createRoute(orderId)
+                        )
+                    }
+                )
             }
+
+            composable(
+                route = Screen.UserOrderDetails.route,
+                arguments = listOf(
+                    navArgument("orderId") { type = NavType.StringType }
+                ),
+                enterTransition = { slideInHorizontally { it } },
+                exitTransition = { slideOutHorizontally { -it } }
+            ) { entry ->
+
+                val orderId = entry.arguments!!.getString("orderId")!!
+
+                val orderDetailsVm = remember {
+                    OrderDetailsViewModel(
+                        ordersRepo = UserOrdersRepository(NetworkClient.userOrdersApi),
+                        addressRepo = AddressRepository(NetworkClient.addressApi),
+                        userId = 1
+                    )
+                }
+
+                OrderDetailsScreen(
+                    orderId = orderId,
+                    viewModel = orderDetailsVm,
+                    onBack = { navController.popBackStack() },
+                    onTrack = {
+                        // next step: tracking screen
+                    }
+                )
+            }
+
 
             composable(Screen.UserProfile.route) {
 

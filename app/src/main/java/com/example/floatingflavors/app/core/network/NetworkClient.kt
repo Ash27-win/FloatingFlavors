@@ -12,6 +12,7 @@ import com.example.floatingflavors.app.feature.user.data.booking_checkout.Paymen
 import com.example.floatingflavors.app.feature.user.data.cart.CartApi
 import com.example.floatingflavors.app.feature.user.data.cart.CheckoutApi
 import com.example.floatingflavors.app.feature.user.data.membership.MembershipApi
+import com.example.floatingflavors.app.feature.user.data.order.UserOrdersApi
 import com.example.floatingflavors.app.feature.user.data.remote.api.HomeApi
 import com.example.floatingflavors.app.feature.user.data.settings.AddressApi
 import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsApi
@@ -24,8 +25,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
-//    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
-    const val BASE_URL = "http://10.88.233.250/floating_flavors_api/"
+    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
+//    const val BASE_URL = "http://10.119.69.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
     private val logging = HttpLoggingInterceptor().apply {
@@ -97,6 +98,10 @@ object NetworkClient {
 
     val paymentApi: PaymentApi by lazy {
         retrofit.create(PaymentApi::class.java)
+    }
+
+    val userOrdersApi: UserOrdersApi by lazy {
+        retrofit.create(UserOrdersApi::class.java)
     }
 
 
