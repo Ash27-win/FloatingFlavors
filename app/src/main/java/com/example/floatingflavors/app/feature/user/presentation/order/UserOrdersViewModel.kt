@@ -32,33 +32,38 @@ class UserOrdersViewModel(
 
             /* ---------- NORMAL ORDERS ---------- */
             ordersRepository.getOrders().data.orEmpty().forEach { order ->
+
                 val ui = UserOrderUiModel(
                     orderId = order.id ?: "",
-                    dateTime = order.created_at ?: "",
+                    dateTime = order.time_ago ?: order.created_at.orEmpty(),
                     items = order.items.orEmpty().map {
                         "${it.qty ?: 0} x ${it.name.orEmpty()}"
                     },
-                    status = order.status ?: "Pending",
+                    status = order.status ?: "pending",
                     amount = "₹${order.amount ?: "0"}",
                     isEvent = false
                 )
 
                 when (ui.status.lowercase()) {
-                    "pending", "preparing", "confirmed" -> active.add(ui)
+                    "pending",
+                    "confirmed",
+                    "preparing",
+                    "out_for_delivery" -> active.add(ui)
                     else -> past.add(ui)
                 }
             }
 
             /* ---------- EVENT BOOKING ---------- */
             bookingRepository.getUserActiveBooking(userId)?.let { booking ->
+
                 val bookingUi = UserOrderUiModel(
                     orderId = "CAT${booking.booking_id}",
                     dateTime = booking.event_date ?: "",
                     items = listOf(
                         "${booking.people_count ?: 0} x ${booking.event_type.orEmpty()} Catering Pack"
                     ),
-                    status = booking.status ?: "Confirmed",
-                    amount = "0",
+                    status = booking.status ?: "confirmed",
+                    amount = "₹0",
                     isEvent = true
                 )
 

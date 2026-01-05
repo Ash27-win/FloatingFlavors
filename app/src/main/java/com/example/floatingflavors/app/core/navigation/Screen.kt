@@ -32,7 +32,16 @@ sealed class Screen(val route: String) {
         fun createRoute(orderId: String) =
             "user_order_details/$orderId"
     }
+
+    object UserOrderTracking : Screen("user_order_tracking/{orderId}/{type}") {
+        fun createRoute(orderId: Int, type: String) =
+            "user_order_tracking/$orderId/$type"
+    }
+
     object UserProfile : Screen("user_profile")
+
+    // User inner screens
+    object UserNotifications : Screen("user_notifications")
 
     object UserMembership : Screen("user_membership")
 

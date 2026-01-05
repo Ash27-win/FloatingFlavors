@@ -145,14 +145,34 @@ fun OrderDetailDialog(
                                 ) { Text("Reject", color = Color.White) }
                             }
                         }
+//                        "active" -> {
+//                            // single primary action to mark delivered
+//                            Button(
+//                                onClick = { onMarkDelivered(order.id ?: "") },
+//                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+//                                modifier = Modifier.fillMaxWidth()
+//                            ) {
+//                                Text("Mark as Delivered", color = Color.White)
+//                            }
+//                        }
                         "active" -> {
-                            // single primary action to mark delivered
-                            Button(
-                                onClick = { onMarkDelivered(order.id ?: "") },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Mark as Delivered", color = Color.White)
+                            Column {
+                                Button(
+                                    onClick = { onAccept(order.id ?: "") },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Start Delivery", color = Color.White)
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                OutlinedButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Close")
+                                }
                             }
                         }
                         "completed", "done" -> {

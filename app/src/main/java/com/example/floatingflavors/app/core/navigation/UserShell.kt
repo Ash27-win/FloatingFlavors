@@ -40,6 +40,9 @@ import com.example.floatingflavors.app.feature.user.presentation.order.OrderDeta
 import com.example.floatingflavors.app.feature.user.presentation.order.OrderDetailsViewModel
 import com.example.floatingflavors.app.feature.user.presentation.order.UserOrdersScreen
 import com.example.floatingflavors.app.feature.user.presentation.order.UserOrdersViewModel
+import com.example.floatingflavors.app.feature.user.presentation.tracking.LiveOrderTrackingScreen
+import com.example.floatingflavors.app.feature.user.presentation.notification.UserNotificationScreen
+import com.example.floatingflavors.app.feature.user.presentation.tracking.LiveTrackingMapScreen
 
 
 @Composable
@@ -51,7 +54,8 @@ fun UserShell(
     val currentRoute = backStack?.destination?.route
 
     val hideBottomBar =
-        currentRoute?.startsWith("user_booking_menu") == true
+        currentRoute?.startsWith("user_booking_menu") == true ||
+                currentRoute == Screen.UserNotifications.route
 
 
     // 🔥 SINGLE SOURCE OF TRUTH
@@ -157,6 +161,9 @@ fun UserShell(
                     },
                     onOpenMembership = {
                         navController.navigate(Screen.UserMembership.route)
+                    },
+                    onOpenNotifications = {
+                        navController.navigate(Screen.UserNotifications.route)
                     }
                 )
             }
@@ -374,10 +381,52 @@ fun UserShell(
                     viewModel = orderDetailsVm,
                     onBack = { navController.popBackStack() },
                     onTrack = {
-                        // next step: tracking screen
+                        navController.navigate(
+                            Screen.UserOrderTracking.createRoute(
+                                orderId = orderId.toInt(),
+                                type = "INDIVIDUAL" // or EVENT / COMPANY
+                            )
+                        )
                     }
                 )
             }
+
+            composable(
+                route = "user_order_tracking/{orderId}/{orderType}",
+                arguments = listOf(
+                    navArgument("orderId") { type = NavType.IntType },
+                    navArgument("orderType") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+
+                val orderId = backStackEntry.arguments!!.getInt("orderId")
+                val orderType = backStackEntry.arguments!!.getString("orderType")!!
+
+                LiveOrderTrackingScreen(
+                    navController = navController,
+                    orderId = orderId,
+                    orderType = orderType
+                )
+            }
+
+            composable(
+                route = "live_map/{orderId}/{orderType}",
+                arguments = listOf(
+                    navArgument("orderId") { type = NavType.IntType },
+                    navArgument("orderType") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+
+                val orderId = backStackEntry.arguments!!.getInt("orderId")
+                val orderType = backStackEntry.arguments!!.getString("orderType")!!
+
+                LiveTrackingMapScreen(
+                    navController = navController,
+                    orderId = orderId,
+                    orderType = orderType
+                )
+            }
+
 
 
             composable(Screen.UserProfile.route) {
@@ -474,70 +523,14 @@ fun UserShell(
             composable(Screen.UserMembership.route) {
                 MembershipScreen(navController)
             }
+
+            composable(Screen.UserNotifications.route) {
+                UserNotificationScreen(
+                    onClose = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }
-
-
-
-
-
-
-
-//package com.example.floatingflavors.app.core.navigation
-//
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Home
-//import androidx.compose.material.icons.filled.RestaurantMenu
-//// Removed unused import: import androidx.compose.material.icons.filled.Notifications
-//import androidx.compose.material.icons.filled.Person
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.getValue
-//import androidx.compose.foundation.layout.padding
-//import androidx.compose.ui.Modifier
-//import androidx.navigation.compose.NavHost
-//import androidx.navigation.compose.composable
-//import androidx.navigation.compose.currentBackStackEntryAsState
-//import androidx.navigation.compose.rememberNavController
-//import com.example.floatingflavors.app.feature.user.presentation.UserHomeScreen
-//// --- FIX: ADDED MISSING IMPORTS ---
-//import com.example.floatingflavors.app.feature.user.presentation.menu.UserMenuGridScreen
-//
-//@Composable
-//fun UserShell(startRoute: String = Screen.UserHome.route) {
-//    val navController = rememberNavController()
-//
-//    Scaffold(
-//        bottomBar = {
-//            val back by navController.currentBackStackEntryAsState()
-//            val current = back?.destination?.route
-//            NavigationBar {
-//                NavigationBarItem(
-//                    selected = current == Screen.UserHome.route,
-//                    onClick = { navController.navigate(Screen.UserHome.route) { launchSingleTop = true } },
-//                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-//                    label = { Text("Home") }
-//                )
-//                NavigationBarItem(
-//                    selected = current == Screen.UserMenuGrid.route,
-//                    onClick = { navController.navigate(Screen.UserMenuGrid.route) { launchSingleTop = true } },
-//                    icon = { Icon(Icons.Default.RestaurantMenu, contentDescription = "Menu") },
-//                    label = { Text("Menu") }
-//                )
-//                NavigationBarItem(
-//                    selected = current == Screen.UserProfile.route,
-//                    onClick = { navController.navigate(Screen.UserProfile.route) { launchSingleTop = true } },
-//                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-//                    label = { Text("Profile") }
-//                )
-//            }
-//        }
-//    ) { innerPadding ->
-//        NavHost(navController = navController, startDestination = startRoute, modifier = Modifier.padding(innerPadding)) {
-//            composable(Screen.UserHome.route) { UserHomeScreen(onBrowseMenu = { navController.navigate(Screen.UserMenuGrid.route) }) }
-//            composable(Screen.UserMenuGrid.route) { UserMenuGridScreen(onItemClick = { /* show details */ }) }
-//            composable(Screen.UserProfile.route) { /* TODO: user profile screen */ UserHomeScreen(onBrowseMenu = {}) }
-//        }
-//    }
-//}

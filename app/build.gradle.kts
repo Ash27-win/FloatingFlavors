@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.animation.core)
+    implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -111,6 +112,10 @@ dependencies {
 
     // For date/time picker dialogs (if using AndroidX)
     implementation("androidx.compose.material3:material3:1.2.1")
+
+    // OSM FREE SOURCE
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
 }
 
 

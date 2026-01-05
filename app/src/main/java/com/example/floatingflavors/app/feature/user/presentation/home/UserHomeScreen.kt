@@ -28,6 +28,7 @@ import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import com.example.floatingflavors.app.feature.user.data.remote.dto.HomeResponseDto
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.floatingflavors.app.core.auth.TokenManager
+import com.example.floatingflavors.app.core.navigation.Screen
 import com.example.floatingflavors.app.feature.user.presentation.home.HomeUiState
 
 /**
@@ -49,8 +50,9 @@ fun UserHomeScreen(
     onAddToCart: (Int) -> Unit = {},
     onOpenNotifications: () -> Unit = {},
     onOpenMembership: () -> Unit = {},
-    onLogout: () -> Unit = {}   // ✅ ADD THIS
+    onLogout: () -> Unit = {}
 )
+
  {
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(Unit) {

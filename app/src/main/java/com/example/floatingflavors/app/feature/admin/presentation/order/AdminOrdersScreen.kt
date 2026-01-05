@@ -1,5 +1,13 @@
 package com.example.floatingflavors.app.feature.admin.presentation.orders
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.os.Build
+import android.provider.Settings
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,13 +19,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.floatingflavors.MainActivity
 import com.example.floatingflavors.app.feature.admin.presentation.order.BookingDetailDialog
 import com.example.floatingflavors.app.feature.admin.presentation.order.OrderDetailDialog
+import com.example.floatingflavors.app.feature.admin.presentation.tracking.AdminPermissionHandler
+import com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
 import com.example.floatingflavors.app.feature.orders.presentation.OrdersViewModel
 import com.example.floatingflavors.app.feature.order.component.OrderListCard
@@ -28,6 +41,17 @@ import kotlinx.coroutines.launch
 
 // Make TabLabel public so it can be used in public signatures
 data class TabLabel(val title: String, val count: Int)
+
+// Store orderId for permission callback
+var pendingOrderIdForTracking = mutableStateOf<String?>(null)
+
+// WAKE_LOCK permission check function
+private fun hasWakeLockPermission(context: android.content.Context): Boolean {
+    return ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.WAKE_LOCK
+    ) == PackageManager.PERMISSION_GRANTED
+}
 
 /** Compact search bar used under the header */
 @Composable
@@ -54,6 +78,8 @@ fun OrdersSearchBar(
  * Overwrite your existing AdminOrdersScreen.kt with this file.
  * After pasting, Build -> Clean Project -> Rebuild.
  */
+@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
     // VM state
@@ -65,6 +91,8 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
     val searchQuery by vm.searchQuery.collectAsState()
     val selectedTabState by vm.selectedTab.collectAsState()
     val selectedOrder by vm.selectedOrder.collectAsState()
+    val context = LocalContext.current
+    val activity = context as? MainActivity
 
     // Live times map (id -> time_ago text)
     var liveTimes by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -259,12 +287,109 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                     scrimAlpha = 0.45f,
                     onDismiss = { vm.clearSelectedOrder() },
                     onAccept = { orderId ->
-                        vm.updateStatusFromDialog(orderId, "active") { success, err ->
-                            coroutineScope.launch {
-                                if (success) snackbarHostState.showSnackbar("Order accepted")
-                                else snackbarHostState.showSnackbar(err ?: "Failed to accept")
+                        // Store activity reference
+                        val mainActivity = context as? MainActivity
+
+                        if (mainActivity == null) {
+                            println("ERROR: Could not get MainActivity")
+                            return@OrderDetailDialog
+                        }
+
+                        // ✅ ADD THIS LOCATION CHECK:
+                        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+
+                        if (!isGpsEnabled && !isNetworkEnabled) {
+                            // Show toast to enable location
+                            Toast.makeText(
+                                context,
+                                "Please turn ON Location first, then tap Accept again",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            // Open location settings
+                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            context.startActivity(intent)
+                            return@OrderDetailDialog
+                        }
+
+                        // Check ALL required permissions
+                        val hasPermissions = AdminPermissionHandler.hasLocationPermission(mainActivity) &&
+                                hasWakeLockPermission(context)
+
+                        if (!hasPermissions) {
+                            // Store orderId to start service after permission granted
+                            pendingOrderIdForTracking.value = orderId
+
+                            // Show Toast message to user
+                            Toast.makeText(
+                                context,
+                                "Location and wake lock permissions are required for delivery tracking.",
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            // Request location permission
+                            AdminPermissionHandler.requestLocationPermission(mainActivity)
+
+                            // WAKE_LOCK is a normal permission - automatically granted on install
+                            // We don't need to request it separately
+
+                            // Update order status anyway (service will start when permission granted)
+                        }
+
+                        // Update order status FIRST (this is working from your logs)
+                        vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY") { success, errorMessage ->
+                            if (!success) {
+                                // Show error
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Failed to update status: ${errorMessage ?: "Unknown error"}"
+                                    )
+                                }
+                                return@updateStatusFromDialog
                             }
-                            if (success) vm.loadOrderDetail(orderId.toIntOrNull() ?: 0)
+
+                            // Check if we have ALL permissions NOW
+                            if (mainActivity != null && hasWakeLockPermission(context)) {
+                                if (AdminPermissionHandler.hasLocationPermission(mainActivity)) {
+                                    // Start tracking service
+                                    val intent = Intent(context, LocationUpdateService::class.java).apply {
+                                        putExtra("ORDER_ID", orderId.toInt())
+                                        action = "START_TRACKING"
+                                    }
+
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        context.startForegroundService(intent)
+                                    } else {
+                                        context.startService(intent)
+                                    }
+
+                                    // Show success message
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Delivery tracking started!")
+                                    }
+
+                                    // Log for debugging
+                                    println("🚚 GPS Service started for order $orderId")
+                                } else {
+                                    // Location permission still missing
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Order accepted! Location permission needed for tracking.")
+                                    }
+                                }
+                            } else {
+                                // WAKE_LOCK permission missing (shouldn't happen with WAKE_LOCK in manifest)
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Order accepted! Please restart app to enable tracking.")
+                                }
+                                println("⚠️ Order $orderId accepted but WAKE_LOCK permission missing")
+                            }
+
+                            // Refresh order details
+                            orderId.toIntOrNull()?.let { id ->
+                                vm.loadOrderDetail(id)
+                            }
                         }
                     },
                     onReject = { orderId ->
@@ -277,6 +402,14 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                         }
                     },
                     onMarkDelivered = { orderId ->
+                        // STOP GPS SERVICE
+                        context.stopService(
+                            android.content.Intent(
+                                context,
+                                com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService::class.java
+                            )
+                        )
+
                         vm.updateStatusFromDialog(orderId, "completed") { success, err ->
                             coroutineScope.launch {
                                 if (success) snackbarHostState.showSnackbar("Order marked delivered")
@@ -344,7 +477,6 @@ fun OrderTabsWithBadges(
         }
     }
 }
-
 
 
 

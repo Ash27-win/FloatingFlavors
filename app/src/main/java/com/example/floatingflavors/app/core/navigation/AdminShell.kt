@@ -27,6 +27,7 @@ import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminMenu
 import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminAddFoodScreen
 import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminEditFoodScreen
 import com.example.floatingflavors.app.feature.admin.presentation.orders.AdminOrdersScreen
+import com.example.floatingflavors.app.feature.admin.presentation.notification.AdminNotificationScreen
 
 // admin settings wiring
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminSettingsRepository
@@ -102,7 +103,9 @@ fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
             }
 
             // Notifications route
-            composable(Screen.AdminNotifications.route) { AdminNotificationsPlaceholder() }
+            composable(Screen.AdminNotifications.route) {
+                AdminNotificationScreen()
+            }
 
             // Profile route — create repo + vm + screen
             composable(Screen.AdminProfile.route) {
@@ -141,12 +144,6 @@ fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
 /** Small lightweight placeholders so the app won't crash if you don't have these screens yet.
  * Replace these with your real implementations (AdminNotificationsScreen, AdminProfileScreen) when ready.
  */
-@Composable
-private fun AdminNotificationsPlaceholder() {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Text("Notifications (placeholder)", modifier = Modifier.padding(16.dp))
-    }
-}
 
 @Composable
 private fun AdminProfilePlaceholder() {
