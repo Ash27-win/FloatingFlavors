@@ -1,17 +1,17 @@
+// REPLACE OrdersApi.kt with this:
 package com.example.floatingflavors.app.feature.orders.data.remote
 
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.SimpleResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingResponse
 import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingsListResponse
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrderDetailResponseDto
+import com.example.floatingflavors.app.feature.order.data.remote.dto.OrderStatusUpdateResponse
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCountsResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersServerResponseDto
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrdersResponseDto
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
-import retrofit2.http.GET
-import retrofit2.http.POST
-import retrofit2.http.Query
+import com.example.floatingflavors.app.feature.settings.data.remote.dto.ApiResponse
+import okhttp3.RequestBody
+import retrofit2.http.*
 
 interface OrdersApi {
     @GET("get_orders.php")
@@ -31,13 +31,11 @@ interface OrdersApi {
     @GET("get_orders_counts.php")
     suspend fun getOrdersCounts(): OrdersCountsResponseDto
 
-    // Form-encoded (works with PHP $_POST)
-    @FormUrlEncoded
+    // ✅ FIXED: Accept RequestBody instead of MultipartBody.Part
     @POST("update_order_status.php")
     suspend fun updateOrderStatus(
-        @Field("order_id") orderId: Int,
-        @Field("status") status: String
-    ): SimpleResponseDto
+        @Body body: RequestBody
+    ): ApiResponse<OrderStatusUpdateResponse>
 
     // 🔥 BOOKINGS
     @GET("get_event_bookings.php")
@@ -49,5 +47,4 @@ interface OrdersApi {
         @Field("booking_id") bookingId: String,
         @Field("status") status: String
     ): SimpleResponseDto
-
 }

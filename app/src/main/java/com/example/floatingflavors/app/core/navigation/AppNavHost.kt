@@ -147,18 +147,15 @@ fun AppNavHost(navController: NavHostController = rememberNavController(), start
                 onBackClick = { navController.popBackStack() },
                 onLoginClick = { role ->
                     when (role) {
-                        "Admin" -> {
-                            // Navigate into admin root (clears login)
-                            navController.navigate(Screen.AdminRoot.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
+                        "Admin" -> navController.navigate(Screen.AdminRoot.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
                         }
-                        "User" -> {
-                            navController.navigate(Screen.UserRoot.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
+                        "User" -> navController.navigate(Screen.UserRoot.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
                         }
-                        else -> { /* handle other roles if any */ }
+                        "Delivery" -> navController.navigate(Screen.DeliveryRoot.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
                     }
                 },
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) }
@@ -178,6 +175,10 @@ fun AppNavHost(navController: NavHostController = rememberNavController(), start
 
         composable(Screen.UserRoot.route) {
             UserShell()  // UserShell has its own NavController and inner navhost
+        }
+
+        composable(Screen.DeliveryRoot.route) {
+            DeliveryShell() // DeliveryShell has its own NavController and inner navhost
         }
     }
 }

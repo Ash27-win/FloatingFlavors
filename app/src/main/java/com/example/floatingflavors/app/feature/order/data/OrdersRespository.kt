@@ -1,14 +1,17 @@
+// REPLACE OrdersRepository.kt with this:
 package com.example.floatingflavors.app.feature.orders.data
 
 import com.example.floatingflavors.app.core.network.NetworkClient
-import com.example.floatingflavors.app.core.network.NetworkClient.ordersApi
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.SimpleResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrderDetailResponseDto
+import com.example.floatingflavors.app.feature.order.data.remote.dto.OrderStatusUpdateResponse
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCountsResponseDto
 import com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersServerResponseDto
 import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrdersResponseDto
+import com.example.floatingflavors.app.feature.settings.data.remote.dto.ApiResponse
+import okhttp3.FormBody
 
 class OrdersRepository {
     private val api: OrdersApi = NetworkClient.retrofit.create(OrdersApi::class.java)
@@ -25,18 +28,43 @@ class OrdersRepository {
     }
 
     suspend fun getOrderDetail(id: Int): OrderDetailResponseDto {
-        return NetworkClient.ordersApi.getOrderDetail(id)
+        return api.getOrderDetail(id)
     }
 
-    suspend fun updateOrderStatus(orderId: Int, newStatus: String): SimpleResponseDto {
-        return api.updateOrderStatus(orderId, newStatus)
+    // ✅ SIMPLE & WORKING VERSION
+    suspend fun updateOrderStatus(
+        orderId: String,
+        newStatus: String,
+        deliveryPartnerId: Int? = null
+    ): ApiResponse<OrderStatusUpdateResponse> {
+        return try {
+            // Create form data
+            val formBody = FormBody.Builder()
+                .add("order_id", orderId)
+                .add("status", newStatus)
+                .apply {
+                    deliveryPartnerId?.let {
+                        add("delivery_partner_id", it.toString())
+                    }
+                }
+                .build()
+
+            // Call API with RequestBody
+            api.updateOrderStatus(formBody)
+        } catch (e: Exception) {
+            ApiResponse(
+                status = false,
+                message = e.message ?: "Network error",
+                data = null
+            )
+        }
     }
 
-    // 🔥 Bookings - Fix return type
+    // 🔥 Bookings
     suspend fun getEventBookings(): List<AdminBookingDto> {
         val response = api.getEventBookings()
-        return if (response.success) {
-            response.data
+        return if (response.success) { // Change from response.status to response.success
+            response.data ?: emptyList()
         } else {
             emptyList()
         }

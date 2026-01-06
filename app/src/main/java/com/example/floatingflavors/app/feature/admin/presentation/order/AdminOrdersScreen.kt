@@ -286,62 +286,120 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                     order = selectedOrder!!,
                     scrimAlpha = 0.45f,
                     onDismiss = { vm.clearSelectedOrder() },
+//                    onAccept = { orderId ->
+//                        // Store activity reference
+//                        val mainActivity = context as? MainActivity
+//
+//                        if (mainActivity == null) {
+//                            println("ERROR: Could not get MainActivity")
+//                            return@OrderDetailDialog
+//                        }
+//
+//                        // ✅ ADD THIS LOCATION CHECK:
+//                        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+//                        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+//                        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+//
+//                        if (!isGpsEnabled && !isNetworkEnabled) {
+//                            // Show toast to enable location
+//                            Toast.makeText(
+//                                context,
+//                                "Please turn ON Location first, then tap Accept again",
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//
+//                            // Open location settings
+//                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+//                            context.startActivity(intent)
+//                            return@OrderDetailDialog
+//                        }
+//
+//                        // Check ALL required permissions
+//                        val hasPermissions = AdminPermissionHandler.hasLocationPermission(mainActivity) &&
+//                                hasWakeLockPermission(context)
+//
+//                        if (!hasPermissions) {
+//                            // Store orderId to start service after permission granted
+//                            pendingOrderIdForTracking.value = orderId
+//
+//                            // Show Toast message to user
+//                            Toast.makeText(
+//                                context,
+//                                "Location and wake lock permissions are required for delivery tracking.",
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//
+//                            // Request location permission
+//                            AdminPermissionHandler.requestLocationPermission(mainActivity)
+//
+//                            // WAKE_LOCK is a normal permission - automatically granted on install
+//                            // We don't need to request it separately
+//
+//                            // Update order status anyway (service will start when permission granted)
+//                        }
+//
+//                        // Update order status FIRST (this is working from your logs)
+//                        vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY") { success, errorMessage ->
+//                            if (!success) {
+//                                // Show error
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar(
+//                                        "Failed to update status: ${errorMessage ?: "Unknown error"}"
+//                                    )
+//                                }
+//                                return@updateStatusFromDialog
+//                            }
+//
+//                            // Check if we have ALL permissions NOW
+//                            if (mainActivity != null && hasWakeLockPermission(context)) {
+//                                if (AdminPermissionHandler.hasLocationPermission(mainActivity)) {
+//                                    // Start tracking service
+//                                    val intent = Intent(context, LocationUpdateService::class.java).apply {
+//                                        putExtra("ORDER_ID", orderId.toInt())
+//                                        action = "START_TRACKING"
+//                                    }
+//
+//                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                                        context.startForegroundService(intent)
+//                                    } else {
+//                                        context.startService(intent)
+//                                    }
+//
+//                                    // Show success message
+//                                    coroutineScope.launch {
+//                                        snackbarHostState.showSnackbar("Delivery tracking started!")
+//                                    }
+//
+//                                    // Log for debugging
+//                                    println("🚚 GPS Service started for order $orderId")
+//                                } else {
+//                                    // Location permission still missing
+//                                    coroutineScope.launch {
+//                                        snackbarHostState.showSnackbar("Order accepted! Location permission needed for tracking.")
+//                                    }
+//                                }
+//                            } else {
+//                                // WAKE_LOCK permission missing (shouldn't happen with WAKE_LOCK in manifest)
+//                                coroutineScope.launch {
+//                                    snackbarHostState.showSnackbar("Order accepted! Please restart app to enable tracking.")
+//                                }
+//                                println("⚠️ Order $orderId accepted but WAKE_LOCK permission missing")
+//                            }
+//
+//                            // Refresh order details
+//                            orderId.toIntOrNull()?.let { id ->
+//                                vm.loadOrderDetail(id)
+//                            }
+//                        }
+//                    },
+                    // ✅ REPLACE the onAccept block in AdminOrdersScreen.kt with this:
                     onAccept = { orderId ->
-                        // Store activity reference
-                        val mainActivity = context as? MainActivity
+                        // ✅ Add delivery partner ID (you need to get this from somewhere - maybe hardcoded for testing)
+                        val deliveryPartnerId = 4 // This should come from your system - for testing use 4
 
-                        if (mainActivity == null) {
-                            println("ERROR: Could not get MainActivity")
-                            return@OrderDetailDialog
-                        }
-
-                        // ✅ ADD THIS LOCATION CHECK:
-                        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-                        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-
-                        if (!isGpsEnabled && !isNetworkEnabled) {
-                            // Show toast to enable location
-                            Toast.makeText(
-                                context,
-                                "Please turn ON Location first, then tap Accept again",
-                                Toast.LENGTH_LONG
-                            ).show()
-
-                            // Open location settings
-                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                            context.startActivity(intent)
-                            return@OrderDetailDialog
-                        }
-
-                        // Check ALL required permissions
-                        val hasPermissions = AdminPermissionHandler.hasLocationPermission(mainActivity) &&
-                                hasWakeLockPermission(context)
-
-                        if (!hasPermissions) {
-                            // Store orderId to start service after permission granted
-                            pendingOrderIdForTracking.value = orderId
-
-                            // Show Toast message to user
-                            Toast.makeText(
-                                context,
-                                "Location and wake lock permissions are required for delivery tracking.",
-                                Toast.LENGTH_LONG
-                            ).show()
-
-                            // Request location permission
-                            AdminPermissionHandler.requestLocationPermission(mainActivity)
-
-                            // WAKE_LOCK is a normal permission - automatically granted on install
-                            // We don't need to request it separately
-
-                            // Update order status anyway (service will start when permission granted)
-                        }
-
-                        // Update order status FIRST (this is working from your logs)
-                        vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY") { success, errorMessage ->
+                        // Update order status WITH delivery_partner_id
+                        vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY", deliveryPartnerId) { success, errorMessage ->
                             if (!success) {
-                                // Show error
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
                                         "Failed to update status: ${errorMessage ?: "Unknown error"}"
@@ -350,40 +408,8 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                                 return@updateStatusFromDialog
                             }
 
-                            // Check if we have ALL permissions NOW
-                            if (mainActivity != null && hasWakeLockPermission(context)) {
-                                if (AdminPermissionHandler.hasLocationPermission(mainActivity)) {
-                                    // Start tracking service
-                                    val intent = Intent(context, LocationUpdateService::class.java).apply {
-                                        putExtra("ORDER_ID", orderId.toInt())
-                                        action = "START_TRACKING"
-                                    }
-
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        context.startForegroundService(intent)
-                                    } else {
-                                        context.startService(intent)
-                                    }
-
-                                    // Show success message
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Delivery tracking started!")
-                                    }
-
-                                    // Log for debugging
-                                    println("🚚 GPS Service started for order $orderId")
-                                } else {
-                                    // Location permission still missing
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Order accepted! Location permission needed for tracking.")
-                                    }
-                                }
-                            } else {
-                                // WAKE_LOCK permission missing (shouldn't happen with WAKE_LOCK in manifest)
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Order accepted! Please restart app to enable tracking.")
-                                }
-                                println("⚠️ Order $orderId accepted but WAKE_LOCK permission missing")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Order accepted and assigned to delivery partner!")
                             }
 
                             // Refresh order details

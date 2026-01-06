@@ -32,7 +32,7 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val roles = listOf("User", "Admin")
+    val roles = listOf("User", "Admin", "Delivery")
     var selectedRole by remember { mutableStateOf("Select") }
     var roleMenuExpanded by remember { mutableStateOf(false) }
 
@@ -89,15 +89,29 @@ fun LoginScreen(
                     .background(Color.White)
                     .padding(16.dp)
             ) {
-                Text("Email Address", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = if (selectedRole == "Delivery")
+                        "Phone or Email"
+                    else
+                        "Email Address",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Spacer(modifier = Modifier.height(4.dp))
 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Enter your email") },
-                    singleLine = true
+                    placeholder = {
+                        Text(
+                            if (selectedRole == "Delivery")
+                                "Enter phone number or email"
+                            else
+                                "Enter your email"
+                        )
+                    },
+                            singleLine = true
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

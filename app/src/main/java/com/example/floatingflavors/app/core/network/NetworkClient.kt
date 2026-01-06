@@ -4,6 +4,8 @@ package com.example.floatingflavors.app.core.network
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminSettingsApi
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.data.AdminLocationApi
 import com.example.floatingflavors.app.feature.auth.data.remote.AuthApi
+import com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryApi
+import com.example.floatingflavors.app.feature.delivery.presentation.tracking.data.DeliveryLocationApi
 import com.example.floatingflavors.app.feature.menu.data.remote.MenuApi // NEW
 import com.example.floatingflavors.app.feature.orders.data.remote.OrdersApi
 import com.example.floatingflavors.app.feature.user.data.booking.BookingApi
@@ -27,8 +29,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
-//    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
-    const val BASE_URL = "http://10.93.170.250/floating_flavors_api/"
+    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
+//    const val BASE_URL = "http://10.88.233.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
     private val logging = HttpLoggingInterceptor().apply {
@@ -112,5 +114,15 @@ object NetworkClient {
     val adminLocationApi: AdminLocationApi by lazy {
         retrofit.create(AdminLocationApi::class.java)
     }
+
+    // In NetworkClient.kt, add:
+    val deliveryLocationApi: DeliveryLocationApi by lazy {
+        retrofit.create(DeliveryLocationApi::class.java)
+    }
+
+    // Delivery concept
+    val deliveryApi: DeliveryApi =
+        retrofit.create(DeliveryApi::class.java)
+
 
 }

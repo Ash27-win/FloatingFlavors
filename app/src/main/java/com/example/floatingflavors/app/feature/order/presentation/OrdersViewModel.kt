@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingDto
 import com.example.floatingflavors.app.feature.orders.data.OrdersRepository
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
+import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrdersItemDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -96,7 +97,12 @@ class OrdersViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val foodOrders = repository.getOrders().data ?: emptyList()
+                val foodOrdersResponse = repository.getOrders()
+                val foodOrders = if (foodOrdersResponse.success) {
+                    foodOrdersResponse.data ?: emptyList()
+                } else {
+                    emptyList()
+                }
 
                 val bookings: List<AdminBookingDto> = repository.getEventBookings()
 
@@ -109,11 +115,10 @@ class OrdersViewModel(
 
                     OrderDto(
                         id = "B-${bookingIdStr}",
-                        customer_name =
-                            if (booking.booking_type == "EVENT")
-                                booking.event_name ?: "Event Booking"
-                            else
-                                booking.company_name ?: "Company Contract",
+                        customer_name = if (booking.booking_type == "EVENT")
+                            booking.event_name ?: "Event Booking"
+                        else
+                            booking.company_name ?: "Company Contract",
                         status = when (booking.status) {
                             "PENDING" -> "pending"
                             "CONFIRMED" -> "active"
@@ -125,6 +130,7 @@ class OrdersViewModel(
                         items = emptyList(),
                         amount = null,
                         distance = null,
+                        delivery_partner_id = null,
                         isBooking = true,
                         bookingId = bookingIdStr
                     )
@@ -145,7 +151,7 @@ class OrdersViewModel(
         viewModelScope.launch {
             try {
                 val resp = repository.getOrderDetail(id)
-                if (resp.success && resp.data != null) {
+                if (resp.status && resp.data != null) {
                     _selectedOrder.value = resp.data
                 } else {
                     _selectedOrder.value = null
@@ -172,40 +178,59 @@ class OrdersViewModel(
 
             // optimistic list update
             if (idx != -1) {
-                currentList[idx] = currentList[idx].copy(status = newStatus)
+                currentList[idx] = currentList[idx].copy(
+                    status = newStatus,
+                    delivery_partner_id = currentList[idx].delivery_partner_id // Keep existing
+                )
                 _orders.value = currentList
             }
 
             // optimistic selected update
             val sel = _selectedOrder.value
             if (sel != null && sel.id == orderId) {
-                _selectedOrder.value = sel.copy(status = newStatus)
+                _selectedOrder.value = sel.copy(
+                    status = newStatus,
+                    delivery_partner_id = sel.delivery_partner_id // Keep existing
+                )
             }
 
             try {
-                val resp = repository.updateOrderStatus(orderId.toInt(), newStatus)
-                if (resp.success) {
-                    // update succeeded; optionally reload detail to get latest
+                // Use the repository method without delivery partner
+                val resp = repository.updateOrderStatus(orderId, newStatus)
+                if (resp.status) {
+                    // update succeeded
                     onResult(true, null)
                 } else {
                     // rollback
                     if (idx != -1) {
-                        currentList[idx] = currentList[idx].copy(status = oldStatus)
+                        currentList[idx] = currentList[idx].copy(
+                            status = oldStatus,
+                            delivery_partner_id = currentList[idx].delivery_partner_id
+                        )
                         _orders.value = currentList
                     }
                     if (sel != null && sel.id == orderId) {
-                        _selectedOrder.value = sel.copy(status = oldStatus)
+                        _selectedOrder.value = sel.copy(
+                            status = oldStatus,
+                            delivery_partner_id = sel.delivery_partner_id
+                        )
                     }
-                    onResult(false, resp.message ?: "Failed to update status")
+                    onResult(false, resp.message)
                 }
             } catch (e: Exception) {
                 // rollback
                 if (idx != -1) {
-                    currentList[idx] = currentList[idx].copy(status = oldStatus)
+                    currentList[idx] = currentList[idx].copy(
+                        status = oldStatus,
+                        delivery_partner_id = currentList[idx].delivery_partner_id
+                    )
                     _orders.value = currentList
                 }
                 if (sel != null && sel.id == orderId) {
-                    _selectedOrder.value = sel.copy(status = oldStatus)
+                    _selectedOrder.value = sel.copy(
+                        status = oldStatus,
+                        delivery_partner_id = sel.delivery_partner_id
+                    )
                 }
                 onResult(false, e.message)
             }
@@ -216,21 +241,34 @@ class OrdersViewModel(
     fun updateStatusFromDialog(
         orderId: String,
         newStatus: String,
-        onComplete: (Boolean, String?) -> Unit
+        deliveryPartnerId: Int? = null,
+        callback: (Boolean, String?) -> Unit
     ) {
         viewModelScope.launch {
             try {
-                if (orderId.startsWith("B-")) {
-                    // 🔥 Booking
-                    val realId = orderId.removePrefix("B-")
-                    repository.updateBookingStatus(realId, newStatus.uppercase())
+                // Call repository method
+                val result = repository.updateOrderStatus(
+                    orderId = orderId,
+                    newStatus = newStatus,
+                    deliveryPartnerId = deliveryPartnerId
+                )
+
+                if (result.status) {
+                    // Update local state
+                    _orders.value = _orders.value.map { order ->
+                        if (order.id == orderId) {
+                            order.copy(
+                                status = newStatus,
+                                delivery_partner_id = deliveryPartnerId?.toString()
+                            )
+                        } else order
+                    }
+                    callback(true, null)
                 } else {
-                    // 🔥 Food order
-                    repository.updateOrderStatus(orderId.toInt(), newStatus)
+                    callback(false, result.message)
                 }
-                onComplete(true, null)
             } catch (e: Exception) {
-                onComplete(false, e.message)
+                callback(false, e.message)
             }
         }
     }

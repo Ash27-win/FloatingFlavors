@@ -83,5 +83,14 @@ sealed class Screen(val route: String) {
     object TermsOfService : Screen("terms_of_service")
     object PrivacyPolicy : Screen("privacy_policy")
 
+    // DELIVERY PARTNER
+    object DeliveryRoot : Screen("delivery_root")
+
+    // Delivery inner screens
+    object DeliveryDashboard : Screen("delivery_dashboard")
+    object DeliveryOrders : Screen("delivery_orders")
+    object DeliveryProfile : Screen("delivery_profile")
+
+
 
 }

@@ -38,7 +38,7 @@
 
         <!-- ADMIN LOCATION SERVICE - FIXED -->
         <service
-            android:name=".app.feature.admin.presentation.tracking.service.LocationUpdateService"
+            android:name=".app.feature.delivery.presentation.tracking.DeliveryLocationUpdateService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location"

@@ -15,6 +15,7 @@ import android.content.Context
 import android.location.LocationManager
 import android.os.Bundle
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService
+import com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryLocationUpdateService
 
 class MainActivity : ComponentActivity() {
 
@@ -45,38 +46,51 @@ class MainActivity : ComponentActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            // Check if all permissions were granted
-            val allGranted = grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
+            val granted = grantResults.all {
+                it == android.content.pm.PackageManager.PERMISSION_GRANTED
+            }
 
-            if (allGranted) {
-                Toast.makeText(this, "Location permission granted! Starting tracking...", Toast.LENGTH_SHORT).show()
+            if (!granted) {
+                Toast.makeText(
+                    this,
+                    "Location permission denied",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
 
-                // Check if GPS is enabled
-                val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+            val locationManager =
+                getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-                if (!isGpsEnabled) {
-                    Toast.makeText(this, "Please enable GPS for accurate tracking", Toast.LENGTH_LONG).show()
-                }
+            if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                Toast.makeText(
+                    this,
+                    "Please enable GPS and click Accept again",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
 
-                // Start tracking service if we have a pending order
-                pendingOrderIdForTracking?.let { orderId ->
-                    val intent = Intent(this, LocationUpdateService::class.java).apply {
+            pendingOrderIdForTracking?.let { orderId ->
+                val intent =
+                    Intent(this, DeliveryLocationUpdateService::class.java).apply {
                         putExtra("ORDER_ID", orderId.toInt())
                         action = "START_TRACKING"
                     }
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(intent)
-                    } else {
-                        startService(intent)
-                    }
-
-                    Toast.makeText(this, "GPS tracking started for order #$orderId", Toast.LENGTH_LONG).show()
-                    pendingOrderIdForTracking = null
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
                 }
-            } else {
-                Toast.makeText(this, "Location permission denied. Cannot track delivery.", Toast.LENGTH_LONG).show()
+
+                Toast.makeText(
+                    this,
+                    "GPS tracking started",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                pendingOrderIdForTracking = null
             }
         }
     }
