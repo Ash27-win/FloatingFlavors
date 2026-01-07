@@ -1,10 +1,13 @@
-package com.example.floatingflavors.app.feature.delivery.data
+import com.example.floatingflavors.app.feature.delivery.data.remote.ActiveOrderDto
+import com.example.floatingflavors.app.feature.delivery.data.remote.UpcomingOrderDto
+import com.google.gson.annotations.SerializedName
 
-data class DeliveryDashboardResponseDto(
-    val success: Boolean,
-    val delivery_partner_name: String,
-    val active_order: OrderDto?,
-    val upcoming_orders: List<OrderDto>
+data class DeliveryDashboardResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("delivery_partner_name") val deliveryPartnerName: String? = null,
+    @SerializedName("active_order") val activeOrder: ActiveOrderDto? = null,
+    @SerializedName("upcoming_orders") val upcomingOrders: List<UpcomingOrderDto>? = null
 )
 
 //data class OrderDto(

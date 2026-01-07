@@ -82,12 +82,20 @@ fun DeliveryShell(
 
                 DeliveryDashboardScreen(
                     viewModel = dashboardViewModel,
-                    deliveryPartnerId = deliveryPartnerId,
                     onViewDetails = { orderId ->
-                        // ✅ Navigate to order details with GPS
                         navController.navigate("delivery_order_details/$orderId")
                     }
                 )
+
+
+//                DeliveryDashboardScreen(
+//                    viewModel = dashboardViewModel,
+//                    deliveryPartnerId = deliveryPartnerId,
+//                    onViewDetails = { orderId ->
+//                        // ✅ Navigate to order details with GPS
+//                        navController.navigate("delivery_order_details/$orderId")
+//                    }
+//                )
             }
 
             // ✅ ADD NEW ROUTE for Delivery Order Details

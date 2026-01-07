@@ -26,6 +26,8 @@ sealed class Screen(val route: String) {
     object UserHome : Screen("user_home")
     object UserMenuGrid : Screen("user_menu_grid")
     object UserBooking : Screen("user_booking")
+
+    object ChatBot : Screen("chat_bot")
     object UserOrders : Screen("user_orders")
 
     object UserOrderDetails : Screen("user_order_details/{orderId}") {

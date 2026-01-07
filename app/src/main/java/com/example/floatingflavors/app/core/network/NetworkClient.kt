@@ -1,6 +1,7 @@
 package com.example.floatingflavors.app.core.network
 
 
+import com.example.floatingflavors.app.chatbot.ChatApi
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminSettingsApi
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.data.AdminLocationApi
 import com.example.floatingflavors.app.feature.auth.data.remote.AuthApi
@@ -33,6 +34,8 @@ object NetworkClient {
 //    const val BASE_URL = "http://10.88.233.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
+    const val CHATBOT_BASE_URL = "http://10.198.130.250:8000/"
+
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -46,6 +49,17 @@ object NetworkClient {
         .client(httpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+
+    val chatbotRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(CHATBOT_BASE_URL)
+        .client(httpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val chatApi: ChatApi by lazy {
+        chatbotRetrofit.create(ChatApi::class.java)
+    }
+
 
     val authApi: AuthApi = retrofit.create(AuthApi::class.java)
 
@@ -123,6 +137,5 @@ object NetworkClient {
     // Delivery concept
     val deliveryApi: DeliveryApi =
         retrofit.create(DeliveryApi::class.java)
-
 
 }

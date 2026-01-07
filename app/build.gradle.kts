@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "2.0.21-1.0.25"
 }
 
 buildDir = file("build2")
@@ -115,6 +116,11 @@ dependencies {
 
     // OSM FREE SOURCE
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    // ROOM (NO VERSION CATALOG)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    add("ksp", "androidx.room:room-compiler:2.6.1")
 
 }
 

@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class OrderDto(
     val id: Int,
     val customerName: String,
+    val customerPhone: String?,
     val pickupAddress: String,
     val dropAddress: String,
     val amount: Int,

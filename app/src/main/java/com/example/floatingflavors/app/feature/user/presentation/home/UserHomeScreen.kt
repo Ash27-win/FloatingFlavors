@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +28,9 @@ import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import com.example.floatingflavors.app.feature.user.data.remote.dto.HomeResponseDto
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.floatingflavors.app.chatbot.ChatScreen
+import com.example.floatingflavors.app.chatbot.model.ChatViewModel
 import com.example.floatingflavors.app.core.auth.TokenManager
 import com.example.floatingflavors.app.core.navigation.Screen
 import com.example.floatingflavors.app.feature.user.presentation.home.HomeUiState
@@ -42,9 +46,12 @@ import com.example.floatingflavors.app.feature.user.presentation.home.HomeUiStat
  * Call: UserHomeScreen(onBrowseMenu = {}, onBookingCatering = {}, onAddToCart = {})
  */
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserHomeScreen(
     viewModel: UserHomeViewModel = viewModel(),
+    chatViewModel: ChatViewModel,
+    navController: NavController,
     onBrowseMenu: () -> Unit = {},
     onBookingCatering: () -> Unit = {},
     onAddToCart: (Int) -> Unit = {},
@@ -60,6 +67,7 @@ fun UserHomeScreen(
     }
 
     val pageBg = Color(0xFFEBEBEB)
+     var showChat by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = pageBg,
@@ -140,6 +148,36 @@ fun UserHomeScreen(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Button(onClick = { viewModel.loadHome() }) { Text("Load") }
                     }
+                }
+            }
+
+            /* 🔥 AI CHAT FAB */
+            FloatingActionButton(
+                onClick = { showChat = true },
+                containerColor = Color(0xFF00B14F),
+                contentColor = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(20.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.AutoAwesome,
+                    contentDescription = "AI Assistant"
+                )
+            }
+
+            /* 🔽 CHAT BOTTOM SHEET */
+            if (showChat) {
+                ModalBottomSheet(
+                    onDismissRequest = { showChat = false },
+                    sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true
+                    )
+                ) {
+                    ChatScreen(
+                        userId = 1,
+                        viewModel = chatViewModel
+                    )
                 }
             }
         }

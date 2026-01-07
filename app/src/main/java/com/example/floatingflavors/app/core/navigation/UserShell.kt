@@ -27,6 +27,7 @@ import com.example.floatingflavors.app.feature.user.presentation.settings.edit.*
 import com.example.floatingflavors.app.feature.user.presentation.settings.savedAddress.*
 import kotlinx.coroutines.launch
 import androidx.compose.animation.*
+import com.example.floatingflavors.app.chatbot.ChatRepository
 import com.example.floatingflavors.app.feature.user.data.booking_checkout.CheckoutSummaryRepository
 import com.example.floatingflavors.app.feature.user.data.booking_checkout.PaymentRepository
 import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.CheckoutSummaryViewModel
@@ -43,6 +44,10 @@ import com.example.floatingflavors.app.feature.user.presentation.order.UserOrder
 import com.example.floatingflavors.app.feature.user.presentation.tracking.LiveOrderTrackingScreen
 import com.example.floatingflavors.app.feature.user.presentation.notification.UserNotificationScreen
 import com.example.floatingflavors.app.feature.user.presentation.tracking.LiveTrackingMapScreen
+import com.example.floatingflavors.app.chatbot.ChatScreen
+import com.example.floatingflavors.app.chatbot.model.ChatViewModel
+import androidx.compose.ui.platform.LocalContext
+import com.example.floatingflavors.app.chatbot.data.ChatDatabase
 
 
 @Composable
@@ -86,8 +91,23 @@ fun UserShell(
         )
     }
 
+    // ✅ CONTEXT (REQUIRED FOR ROOM)
+    val context = LocalContext.current
 
+    // ✅ CHAT DATABASE + DAO (FIX)
+    val chatDao = remember {
+        ChatDatabase.getInstance(context).chatDao()
+    }
 
+    // ✅ CHAT VIEWMODEL (FIXED – dao passed)
+    val chatViewModel = remember {
+        ChatViewModel(
+            ChatRepository(
+                api = NetworkClient.chatApi,
+                dao = chatDao
+            )
+        )
+    }
 
     Scaffold(
         bottomBar = {
@@ -156,6 +176,8 @@ fun UserShell(
 
             composable(Screen.UserHome.route) {
                 UserHomeScreen(
+                    navController = navController,
+                    chatViewModel = chatViewModel,
                     onBrowseMenu = {
                         navController.navigate(Screen.UserMenuGrid.route)
                     },
@@ -165,6 +187,21 @@ fun UserShell(
                     onOpenNotifications = {
                         navController.navigate(Screen.UserNotifications.route)
                     }
+                )
+            }
+
+            composable(
+                Screen.ChatBot.route,
+                enterTransition = {
+                    slideInVertically { it } + fadeIn()
+                },
+                exitTransition = {
+                    slideOutVertically { it } + fadeOut()
+                }
+            ) {
+                ChatScreen(
+                    userId = 1,
+                    viewModel = chatViewModel
                 )
             }
 

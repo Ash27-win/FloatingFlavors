@@ -30,11 +30,15 @@ fun OnlineStatusCard() {
         colors = CardDefaults.cardColors(containerColor = Color(0xFFEDEAF0))
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier
@@ -69,4 +73,5 @@ fun OnlineStatusCard() {
         }
     }
 }
+
 

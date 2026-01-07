@@ -132,9 +132,9 @@ data class DeliveryDashboardResponse(
 data class ActiveOrderDto(
     @SerializedName("id") val id: String?,
     @SerializedName("customer_name") val customerName: String?,
+    @SerializedName("customer_phone") val customerPhone: String?, // ✅ ADD
     @SerializedName("status") val status: String?,
-    @SerializedName("amount") val amount: String?,
-    @SerializedName("delivery_partner_id") val deliveryPartnerId: String?
+    @SerializedName("amount") val amount: String?
 )
 
 data class UpcomingOrderDto(
