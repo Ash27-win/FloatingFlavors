@@ -1,5 +1,7 @@
 package com.example.floatingflavors.app.core.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.Person
@@ -21,6 +23,7 @@ import com.example.floatingflavors.app.feature.delivery.presentation.DeliveryDas
 import com.example.floatingflavors.app.feature.delivery.presentation.DeliveryDashboardViewModelFactory
 import com.example.floatingflavors.app.feature.delivery.presentation.DeliveryOrderDetailsScreen
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DeliveryShell(
     startRoute: String = Screen.DeliveryDashboard.route
@@ -83,7 +86,9 @@ fun DeliveryShell(
                 DeliveryDashboardScreen(
                     viewModel = dashboardViewModel,
                     onViewDetails = { orderId ->
-                        navController.navigate("delivery_order_details/$orderId")
+                        navController.navigate(
+                            Screen.DeliveryOrderDetails.createRoute(orderId)
+                        )
                     }
                 )
 

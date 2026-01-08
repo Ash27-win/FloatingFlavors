@@ -3,6 +3,7 @@ package com.example.floatingflavors.app.feature.delivery.data.remote
 import com.example.floatingflavors.app.feature.delivery.data.DeliveryOrderDetailsResponse
 import com.example.floatingflavors.app.feature.delivery.data.DeliveryStatusResponse
 import com.example.floatingflavors.app.feature.delivery.data.LiveLocationResponse
+import com.example.floatingflavors.app.feature.settings.data.remote.dto.ApiResponse
 import com.google.gson.annotations.SerializedName
 import retrofit2.http.*
 
@@ -50,6 +51,14 @@ interface DeliveryApi {
     suspend fun getDashboard(
         @Query("delivery_partner_id") deliveryPartnerId: Int
     ): DeliveryDashboardResponse
+
+    @FormUrlEncoded
+    @POST("delivery_accept_order.php")
+    suspend fun acceptOrder(
+        @Field("order_id") orderId: Int,
+        @Field("delivery_partner_id") deliveryPartnerId: Int
+    ): ApiResponse<Unit>
+
 }
 
 // Response data classes
@@ -68,7 +77,9 @@ data class DeliveryOrderData(
     @SerializedName("items") val items: List<OrderItemDto>? = null,
     @SerializedName("time_ago") val timeAgo: String? = null,
     @SerializedName("distance") val distance: String? = null,
-    @SerializedName("created_at") val createdAt: String? = null
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("delivery_address")
+    val deliveryAddress: String?
 )
 
 data class OrderItemDto(

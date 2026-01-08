@@ -320,15 +320,19 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                     scrimAlpha = 0.45f,
                     onDismiss = { vm.clearSelectedOrder() },
                     onAccept = { orderId ->
-                        val deliveryPartnerId = 4 // This should come from your system
 
-                        vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY", deliveryPartnerId) { success, errorMessage ->
+                        // ✅ Admin ONLY confirms order
+                        vm.updateStatusFromDialog(
+                            orderId,
+                            "CONFIRMED",
+                            null
+                        ) { success, errorMessage ->
                             coroutineScope.launch {
                                 if (success) {
-                                    snackbarHostState.showSnackbar("Order accepted and assigned to delivery partner!")
+                                    snackbarHostState.showSnackbar("Order confirmed")
                                 } else {
                                     snackbarHostState.showSnackbar(
-                                        "Failed to update status: ${errorMessage ?: "Unknown error"}"
+                                        "Failed to confirm: ${errorMessage ?: "Unknown error"}"
                                     )
                                 }
                             }
@@ -340,7 +344,7 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                             }
                         }
 
-                        vm.clearSelectedOrder() // Close dialog
+                        vm.clearSelectedOrder()
                     },
                     onReject = { orderId ->
                         // Show reject reason dialog instead of immediately rejecting

@@ -1,6 +1,7 @@
 package com.example.floatingflavors.app.feature.delivery.presentation.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -16,12 +17,16 @@ private val Orange = Color(0xFFEC6D13)
 private val Border = Color(0xFFF0E6DE)
 
 @Composable
-fun UpcomingOrderCard(order: OrderDto) {
+fun UpcomingOrderCard(
+    order: OrderDto,
+    onClick: () -> Unit
+) {
     Card(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, Border, RoundedCornerShape(16.dp))
+            .clickable { onClick() }   // 🔥 THIS WAS MISSING
     ) {
         Column(Modifier.padding(16.dp)) {
 

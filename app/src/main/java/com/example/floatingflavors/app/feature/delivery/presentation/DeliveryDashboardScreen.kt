@@ -61,7 +61,13 @@ fun DeliveryDashboardScreen(
             }
 
             items(state!!.upcomingOrders) { order ->
-                UpcomingOrderCard(order = order)
+                UpcomingOrderCard(
+                    order = order,
+                    onClick = {
+                        // ✅ FIXED: use callback (NO navController here)
+                        onViewDetails(order.id)
+                    }
+                )
             }
         }
     }

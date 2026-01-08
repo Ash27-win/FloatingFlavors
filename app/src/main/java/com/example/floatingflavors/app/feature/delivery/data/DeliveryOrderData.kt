@@ -3,16 +3,28 @@ package com.example.floatingflavors.app.feature.delivery.data
 import com.google.gson.annotations.SerializedName
 
 data class DeliveryOrderData(
-    @SerializedName("id") val id: String?,
-    @SerializedName("customer_name") val customerName: String?,
-    @SerializedName("status") val status: String?,
-    @SerializedName("amount") val amount: String?,
-    @SerializedName("delivery_partner_id") val deliveryPartnerId: String?,
-    @SerializedName("items") val items: List<OrderItemDto>? = null,
-    @SerializedName("time_ago") val timeAgo: String? = null,
-    @SerializedName("distance") val distance: String? = null,
-    @SerializedName("created_at") val createdAt: String? = null
+    val id: String?,
+
+    @SerializedName("customer_name")
+    val customerName: String?,
+
+    val status: String?,
+    val amount: String?,
+
+    @SerializedName("delivery_partner_id")
+    val deliveryPartnerId: String?,
+
+    val items: List<OrderItemDto>?,
+    val distance: String?,
+
+    @SerializedName("created_at")
+    val createdAt: String?,
+
+    // 🔥 THIS WAS MISSING — FINAL FIX
+    @SerializedName("delivery_address")
+    val deliveryAddress: String?
 )
+
 
 
 

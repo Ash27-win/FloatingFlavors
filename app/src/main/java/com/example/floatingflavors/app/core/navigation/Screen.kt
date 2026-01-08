@@ -93,6 +93,13 @@ sealed class Screen(val route: String) {
     object DeliveryOrders : Screen("delivery_orders")
     object DeliveryProfile : Screen("delivery_profile")
 
+    // ✅ ADD THIS
+    object DeliveryOrderDetails : Screen("delivery_order_details/{orderId}") {
+        fun createRoute(orderId: Int): String =
+            "delivery_order_details/$orderId"
+    }
+
+
 
 
 }
