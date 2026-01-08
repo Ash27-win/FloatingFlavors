@@ -50,20 +50,33 @@ fun SmoothLiveTrackingMap(
             }
         },
         update = { map ->
-            if (livePoint == null || destination == null) return@AndroidView
+            if (destination == null) return@AndroidView
 
-            // 🚚 Delivery Marker
-            if (marker == null) {
-                marker = Marker(map).apply {
-                    position = livePoint
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                    title = "Delivery Partner"
-                }
-                map.overlays.add(marker)
-            } else {
-                val oldPos = marker!!.position
-                animateMarkerSmooth(marker!!, oldPos, livePoint)
+            // 🏁 Destination Marker (ALWAYS)
+            if (map.overlays.none { it is Marker && it.title == "Destination" }) {
+                map.overlays.add(
+                    Marker(map).apply {
+                        position = destination
+                        title = "Destination"
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    }
+                )
             }
+
+// 🚚 Live Marker (ONLY IF AVAILABLE)
+            if (livePoint != null) {
+                if (marker == null) {
+                    marker = Marker(map).apply {
+                        position = livePoint
+                        title = "Delivery Partner"
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    }
+                    map.overlays.add(marker)
+                } else {
+                    animateMarkerSmooth(marker!!, marker!!.position, livePoint)
+                }
+            }
+
 
             // 🏁 Destination Marker
             if (map.overlays.none { it is Marker && it.title == "Destination" }) {

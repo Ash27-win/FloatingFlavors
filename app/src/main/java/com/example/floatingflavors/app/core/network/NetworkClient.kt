@@ -31,7 +31,7 @@ object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
 //    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
-    const val BASE_URL = "http://10.93.170.250/floating_flavors_api/"
+    const val BASE_URL = "http://10.88.233.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
     const val CHATBOT_BASE_URL = "http://10.198.130.250:8000/"
