@@ -1,3 +1,4 @@
+// OrderDetailDialog.kt - Updated version
 package com.example.floatingflavors.app.feature.admin.presentation.order
 
 import androidx.compose.foundation.background
@@ -44,7 +45,6 @@ fun OrderDetailDialog(
                 elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
-
                     // Header
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -190,17 +190,18 @@ fun OrderDetailDialog(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // ✅ FIXED: Actions area with proper status handling
+                    // ✅ FIXED: Actions area with proper button colors
                     when ((order.status ?: "").lowercase()) {
                         "pending" -> {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
+                                // Accept button - ALWAYS green
                                 Button(
                                     onClick = {
                                         onAccept(order.id ?: "")
-                                        onDismiss() // ✅ ADD THIS to close dialog after action
+                                        // Note: Dialog will close from parent
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF10B981)
@@ -212,10 +213,11 @@ fun OrderDetailDialog(
 
                                 Spacer(modifier = Modifier.width(12.dp))
 
+                                // Reject button - ALWAYS red
                                 Button(
                                     onClick = {
                                         onReject(order.id ?: "")
-                                        onDismiss() // ✅ ADD THIS to close dialog after action
+                                        // Note: Dialog will NOT close here - parent will handle reject reason dialog
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFFEF4444)
@@ -231,18 +233,20 @@ fun OrderDetailDialog(
                             // Order already assigned to delivery partner
                             Column {
                                 // Show delivery partner info
-                                Text(
-                                    "Assigned to Delivery Partner #${order.delivery_partner_id}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Gray,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
+                                order.delivery_partner_id?.let { partnerId ->
+                                    Text(
+                                        "Assigned to Delivery Partner #$partnerId",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.Gray,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                }
 
-                                // Mark as delivered button
+                                // Mark as delivered button - ALWAYS blue
                                 Button(
                                     onClick = {
                                         onMarkDelivered(order.id ?: "")
-                                        onDismiss() // ✅ ADD THIS to close dialog after action
+                                        // Note: Dialog will close from parent
                                     },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF2563EB)
@@ -255,22 +259,28 @@ fun OrderDetailDialog(
                         }
 
                         "completed", "done", "delivered" -> {
-                            // Order completed - show only Close
+                            // Order completed - show only Close button
                             Button(
                                 onClick = onDismiss,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF6B7280)
+                                ),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Close")
+                                Text("Close", color = Color.White)
                             }
                         }
 
                         else -> {
-                            // Fallback
+                            // Fallback - Close button
                             Button(
                                 onClick = onDismiss,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF6B7280)
+                                ),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Close")
+                                Text("Close", color = Color.White)
                             }
                         }
                     }
@@ -279,7 +289,6 @@ fun OrderDetailDialog(
         }
     }
 }
-
 
 
 

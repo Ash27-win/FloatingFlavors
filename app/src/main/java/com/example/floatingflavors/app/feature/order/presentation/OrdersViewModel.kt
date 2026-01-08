@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.floatingflavors.app.feature.order.data.remote.dto.AdminBookingDto
 import com.example.floatingflavors.app.feature.orders.data.OrdersRepository
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
-import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrdersItemDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -41,34 +40,76 @@ class OrdersViewModel(
 
     private val bookingMap = mutableMapOf<String, AdminBookingDto>()
 
-    // Tab counts derived from _orders
+    // For selected booking
+    private val _selectedBooking = MutableStateFlow<AdminBookingDto?>(null)
+    val selectedBooking: StateFlow<AdminBookingDto?> = _selectedBooking
+
+    // ---------------- TAB COUNTS (ONLY LOGIC ADDED) ----------------
     val tabCounts: StateFlow<Map<String, Int>> = orders
         .map { list ->
-            val pending = list.count { (it.status ?: "").equals("pending", ignoreCase = true) }
-            val active = list.count { (it.status ?: "").equals("active", ignoreCase = true) }
-            val completed = list.count { (it.status ?: "").equals("completed", ignoreCase = true) || (it.status ?: "").equals("done", ignoreCase = true) }
-            mapOf("all" to list.size, "pending" to pending, "active" to active, "completed" to completed)
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, mapOf("all" to 0, "pending" to 0, "active" to 0, "completed" to 0))
+            val pending = list.count {
+                (it.status ?: "").equals("pending", ignoreCase = true)
+            }
 
-    // Client-side filtered orders: tabs + debounced search
-    val filteredOrders: StateFlow<List<OrderDto>> = combine(orders, _selectedTab, _debouncedQuery) { list, tab, query ->
-        val q = query.trim().lowercase()
-        val byTab = when (tab) {
-            1 -> list.filter { (it.status ?: "").equals("pending", ignoreCase = true) }
-            2 -> list.filter { (it.status ?: "").equals("active", ignoreCase = true) }
-            3 -> list.filter { (it.status ?: "").equals("completed", ignoreCase = true) || (it.status ?: "").equals("done", ignoreCase = true) }
-            else -> list
-        }
-        if (q.isBlank()) return@combine byTab
+            // ✅ FIX: active includes OUT_FOR_DELIVERY
+            val active = list.count {
+                (it.status ?: "").equals("active", ignoreCase = true) ||
+                        (it.status ?: "").equals("out_for_delivery", ignoreCase = true)
+            }
 
-        byTab.filter { order ->
-            val idMatch = (order.id ?: "").contains(q, ignoreCase = true)
-            val nameMatch = (order.customer_name ?: "").lowercase().contains(q)
-            val itemsMatch = order.items?.any { (it.name ?: "").lowercase().contains(q) } ?: false
-            idMatch || nameMatch || itemsMatch
+            val completed = list.count {
+                (it.status ?: "").equals("completed", ignoreCase = true) ||
+                        (it.status ?: "").equals("done", ignoreCase = true)
+            }
+
+            mapOf(
+                "all" to list.size,
+                "pending" to pending,
+                "active" to active,
+                "completed" to completed
+            )
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            mapOf("all" to 0, "pending" to 0, "active" to 0, "completed" to 0)
+        )
+
+    // ---------------- FILTERED ORDERS (ONLY LOGIC ADDED) ----------------
+    val filteredOrders: StateFlow<List<OrderDto>> =
+        combine(orders, _selectedTab, _debouncedQuery) { list, tab, query ->
+            val q = query.trim().lowercase()
+
+            val byTab = when (tab) {
+                1 -> list.filter {
+                    (it.status ?: "").equals("pending", ignoreCase = true)
+                }
+
+                // ✅ FIX: active tab includes OUT_FOR_DELIVERY
+                2 -> list.filter {
+                    (it.status ?: "").equals("active", ignoreCase = true) ||
+                            (it.status ?: "").equals("out_for_delivery", ignoreCase = true)
+                }
+
+                3 -> list.filter {
+                    (it.status ?: "").equals("completed", ignoreCase = true) ||
+                            (it.status ?: "").equals("done", ignoreCase = true)
+                }
+
+                else -> list
+            }
+
+            if (q.isBlank()) return@combine byTab
+
+            byTab.filter { order ->
+                val idMatch = (order.id ?: "").contains(q, ignoreCase = true)
+                val nameMatch = (order.customer_name ?: "").lowercase().contains(q)
+                val itemsMatch =
+                    order.items?.any { (it.name ?: "").lowercase().contains(q) } ?: false
+
+                idMatch || nameMatch || itemsMatch
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // ---- functions ----
     fun setSearchQuery(q: String) {
@@ -84,9 +125,6 @@ class OrdersViewModel(
         _selectedTab.value = tab
     }
 
-    private val _selectedBooking = MutableStateFlow<AdminBookingDto?>(null)
-    val selectedBooking: StateFlow<AdminBookingDto?> = _selectedBooking
-
     fun selectBooking(order: OrderDto) {
         val realId = order.bookingId ?: return
         _selectedBooking.value = bookingMap[realId]
@@ -100,25 +138,21 @@ class OrdersViewModel(
                 val foodOrdersResponse = repository.getOrders()
                 val foodOrders = if (foodOrdersResponse.success) {
                     foodOrdersResponse.data ?: emptyList()
-                } else {
-                    emptyList()
-                }
+                } else emptyList()
 
                 val bookings: List<AdminBookingDto> = repository.getEventBookings()
 
                 val bookingOrders: List<OrderDto> = bookings.map { booking ->
-                    // Convert booking.id (Int?) to String for map key
                     val bookingIdStr = booking.id?.toString() ?: "0"
-
-                    // 🔥 SAVE booking for dialog usage
                     bookingMap[bookingIdStr] = booking
 
                     OrderDto(
-                        id = "B-${bookingIdStr}",
-                        customer_name = if (booking.booking_type == "EVENT")
-                            booking.event_name ?: "Event Booking"
-                        else
-                            booking.company_name ?: "Company Contract",
+                        id = "B-$bookingIdStr",
+                        customer_name =
+                            if (booking.booking_type == "EVENT")
+                                booking.event_name ?: "Event Booking"
+                            else
+                                booking.company_name ?: "Company Contract",
                         status = when (booking.status) {
                             "PENDING" -> "pending"
                             "CONFIRMED" -> "active"
@@ -169,75 +203,63 @@ class OrdersViewModel(
     }
 
     // Update status optimistic (list + selectedOrder updated), rollback on failure
-    fun updateOrderStatusOptimistic(orderId: String, newStatus: String, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+    fun updateOrderStatusOptimistic(
+        orderId: String,
+        newStatus: String,
+        onResult: (Boolean, String?) -> Unit = { _, _ -> }
+    ) {
         viewModelScope.launch {
-            // snapshot list and selected
             val currentList = _orders.value.toMutableList()
             val idx = currentList.indexOfFirst { it.id == orderId }
             val oldStatus = if (idx != -1) currentList[idx].status else null
 
-            // optimistic list update
             if (idx != -1) {
                 currentList[idx] = currentList[idx].copy(
                     status = newStatus,
-                    delivery_partner_id = currentList[idx].delivery_partner_id // Keep existing
+                    delivery_partner_id = currentList[idx].delivery_partner_id
                 )
                 _orders.value = currentList
             }
 
-            // optimistic selected update
             val sel = _selectedOrder.value
             if (sel != null && sel.id == orderId) {
                 _selectedOrder.value = sel.copy(
                     status = newStatus,
-                    delivery_partner_id = sel.delivery_partner_id // Keep existing
+                    delivery_partner_id = sel.delivery_partner_id
                 )
             }
 
             try {
-                // Use the repository method without delivery partner
                 val resp = repository.updateOrderStatus(orderId, newStatus)
                 if (resp.status) {
-                    // update succeeded
                     onResult(true, null)
                 } else {
-                    // rollback
-                    if (idx != -1) {
-                        currentList[idx] = currentList[idx].copy(
-                            status = oldStatus,
-                            delivery_partner_id = currentList[idx].delivery_partner_id
-                        )
-                        _orders.value = currentList
-                    }
-                    if (sel != null && sel.id == orderId) {
-                        _selectedOrder.value = sel.copy(
-                            status = oldStatus,
-                            delivery_partner_id = sel.delivery_partner_id
-                        )
-                    }
+                    rollback(idx, oldStatus, currentList, sel)
                     onResult(false, resp.message)
                 }
             } catch (e: Exception) {
-                // rollback
-                if (idx != -1) {
-                    currentList[idx] = currentList[idx].copy(
-                        status = oldStatus,
-                        delivery_partner_id = currentList[idx].delivery_partner_id
-                    )
-                    _orders.value = currentList
-                }
-                if (sel != null && sel.id == orderId) {
-                    _selectedOrder.value = sel.copy(
-                        status = oldStatus,
-                        delivery_partner_id = sel.delivery_partner_id
-                    )
-                }
+                rollback(idx, oldStatus, currentList, sel)
                 onResult(false, e.message)
             }
         }
     }
 
-    // helper used by dialog flows (keeps naming consistent)
+    private fun rollback(
+        idx: Int,
+        oldStatus: String?,
+        list: MutableList<OrderDto>,
+        sel: OrderDto?
+    ) {
+        if (idx != -1) {
+            list[idx] = list[idx].copy(status = oldStatus)
+            _orders.value = list
+        }
+        if (sel != null && sel.id == list.getOrNull(idx)?.id) {
+            _selectedOrder.value = sel.copy(status = oldStatus)
+        }
+    }
+
+    // helper used by dialog flows
     fun updateStatusFromDialog(
         orderId: String,
         newStatus: String,
@@ -246,7 +268,6 @@ class OrdersViewModel(
     ) {
         viewModelScope.launch {
             try {
-                // Call repository method
                 val result = repository.updateOrderStatus(
                     orderId = orderId,
                     newStatus = newStatus,
@@ -254,7 +275,6 @@ class OrdersViewModel(
                 )
 
                 if (result.status) {
-                    // Update local state
                     _orders.value = _orders.value.map { order ->
                         if (order.id == orderId) {
                             order.copy(
@@ -264,9 +284,8 @@ class OrdersViewModel(
                         } else order
                     }
                     callback(true, null)
-                } else {
-                    callback(false, result.message)
-                }
+                } else callback(false, result.message)
+
             } catch (e: Exception) {
                 callback(false, e.message)
             }
@@ -282,13 +301,51 @@ class OrdersViewModel(
             try {
                 repository.updateBookingStatus(bookingId, status)
                 clearBooking()
-                loadOrders() // refresh list
+                loadOrders()
             } catch (e: Exception) {
                 _error.value = e.message
             }
         }
     }
+
+    // ---------------- REJECT ORDER WITH REASON (REQUIRED BY ADMIN UI) ----------------
+    fun rejectOrderWithReason(
+        orderId: String,
+        reason: String,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val result = repository.rejectOrder(orderId, reason)
+
+                if (result.status) {
+                    // update list immediately
+                    _orders.value = _orders.value.map { order ->
+                        if (order.id == orderId) {
+                            order.copy(status = "rejected")
+                        } else order
+                    }
+
+                    // update selected order if dialog is open
+                    _selectedOrder.value?.let { selected ->
+                        if (selected.id == orderId) {
+                            _selectedOrder.value = selected.copy(status = "rejected")
+                        }
+                    }
+
+                    callback(true, result.message)
+                } else {
+                    callback(false, result.message)
+                }
+
+            } catch (e: Exception) {
+                callback(false, e.message)
+            }
+        }
+    }
 }
+
+
 
 //// file: OrdersViewModel.kt (same package com.example.floatingflavors.app.feature.orders.presentation)
 //package com.example.floatingflavors.app.feature.orders.presentation

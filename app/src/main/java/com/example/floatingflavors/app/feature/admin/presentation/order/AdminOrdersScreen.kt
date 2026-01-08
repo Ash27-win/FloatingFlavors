@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.floatingflavors.MainActivity
 import com.example.floatingflavors.app.feature.admin.presentation.order.BookingDetailDialog
 import com.example.floatingflavors.app.feature.admin.presentation.order.OrderDetailDialog
+import com.example.floatingflavors.app.feature.admin.presentation.order.RejectReasonDialog // Add this import
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.AdminPermissionHandler
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
@@ -44,6 +45,10 @@ data class TabLabel(val title: String, val count: Int)
 
 // Store orderId for permission callback
 var pendingOrderIdForTracking = mutableStateOf<String?>(null)
+
+// Add state for reject reason dialog
+var showRejectReasonDialog = mutableStateOf(false)
+var orderIdToReject = mutableStateOf<String?>(null)
 
 // WAKE_LOCK permission check function
 private fun hasWakeLockPermission(context: android.content.Context): Boolean {
@@ -74,9 +79,6 @@ fun OrdersSearchBar(
 
 /**
  * Admin Orders screen (responsive, no top gap above header).
- *
- * Overwrite your existing AdminOrdersScreen.kt with this file.
- * After pasting, Build -> Clean Project -> Rebuild.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -102,27 +104,65 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
 
     val selectedBooking by vm.selectedBooking.collectAsState()
 
+    // Local state for reject reason dialog
+    var showRejectDialog by remember { mutableStateOf(false) }
+    var pendingOrderIdForRejection by remember { mutableStateOf<String?>(null) }
+
     if (selectedBooking != null) {
         BookingDetailDialog(
             booking = selectedBooking!!,
             onAccept = {
-                // Convert Int? to String
                 val bookingId = selectedBooking!!.id?.toString() ?: ""
-                vm.updateBookingStatus(bookingId, "CONFIRMED")
-                // Refresh the list
+                vm. updateBookingStatus(bookingId, "CONFIRMED")
                 vm.loadOrders()
             },
             onReject = {
-                // Convert Int? to String
                 val bookingId = selectedBooking!!.id?.toString() ?: ""
                 vm.updateBookingStatus(bookingId, "CANCELLED")
-                // Refresh the list
                 vm.loadOrders()
             },
             onDismiss = { vm.clearBooking() }
         )
     }
 
+    // Show reject reason dialog
+    if (showRejectDialog && pendingOrderIdForRejection != null) {
+        RejectReasonDialog(
+            onDismiss = {
+                showRejectDialog = false
+                pendingOrderIdForRejection = null
+            },
+            onConfirm = { reason ->
+                pendingOrderIdForRejection?.let { orderId ->
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Rejecting order...")
+
+                        vm.rejectOrderWithReason(orderId, reason) { success, err ->
+                            coroutineScope.launch {
+                                if (success) {
+                                    // ✅ SUCCESS - Show correct message
+                                    snackbarHostState.showSnackbar("Order rejected successfully")
+
+                                    // ✅ Refresh the entire orders list
+                                    vm.loadOrders()
+
+                                    // ✅ Close the reject dialog
+                                    showRejectDialog = false
+                                    pendingOrderIdForRejection = null
+
+                                    // ✅ Also close the main order detail dialog
+                                    vm.clearSelectedOrder()
+                                } else {
+                                    // ❌ FAILURE
+                                    snackbarHostState.showSnackbar("Failed to reject: ${err ?: "Unknown error"}")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     // initial load
     LaunchedEffect(Unit) { vm.loadOrders() }
@@ -156,16 +196,12 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
         TabLabel("Completed", counts["completed"] ?: 0)
     )
 
-    // We will explicitly handle Scaffold content padding so the top gap is removed.
-    // Get layout direction to calculate start/end paddings correctly.
     val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
-        // IMPORTANT: Do not provide topBar — this avoids default overflow icon/dots.
         topBar = {},
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
-        // innerPadding may include system insets; we intentionally drop top inset to remove top-gap.
         val startPad = innerPadding.calculateStartPadding(layoutDirection)
         val endPad = innerPadding.calculateEndPadding(layoutDirection)
         val bottomPad = innerPadding.calculateBottomPadding()
@@ -173,14 +209,13 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                // apply only horizontal + bottom padding from scaffold; intentionally skip top padding
                 .padding(start = startPad, end = endPad, bottom = bottomPad)
         ) {
-            // Header (blue) — use heightIn so it adapts on different screen sizes
+            // Header (blue)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 96.dp, max = 140.dp) // responsive header height
+                    .heightIn(min = 96.dp, max = 140.dp)
                     .background(brush = Brush.horizontalGradient(colors = listOf(Color(0xFF2563EB), Color(0xFF3B82F6))))
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
@@ -199,10 +234,9 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                 }
             }
 
-            // small gap below header
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Search bar (compact)
+            // Search bar
             OrdersSearchBar(
                 query = searchQuery,
                 onQueryChange = { vm.setSearchQuery(it) },
@@ -218,7 +252,6 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                 labels = labels,
                 onTabChange = { idx ->
                     vm.setSelectedTab(idx)
-                    // optional: clear search on tab change
                     vm.setSearchQuery("")
                 },
                 modifier = Modifier.padding(horizontal = 12.dp)
@@ -280,168 +313,64 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
                 }
             }
 
-            // selected order dialog (centered, full scrim handled in dialog)
+            // Order detail dialog
             if (selectedOrder != null) {
                 OrderDetailDialog(
                     order = selectedOrder!!,
                     scrimAlpha = 0.45f,
                     onDismiss = { vm.clearSelectedOrder() },
-//                    onAccept = { orderId ->
-//                        // Store activity reference
-//                        val mainActivity = context as? MainActivity
-//
-//                        if (mainActivity == null) {
-//                            println("ERROR: Could not get MainActivity")
-//                            return@OrderDetailDialog
-//                        }
-//
-//                        // ✅ ADD THIS LOCATION CHECK:
-//                        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-//                        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-//                        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-//
-//                        if (!isGpsEnabled && !isNetworkEnabled) {
-//                            // Show toast to enable location
-//                            Toast.makeText(
-//                                context,
-//                                "Please turn ON Location first, then tap Accept again",
-//                                Toast.LENGTH_LONG
-//                            ).show()
-//
-//                            // Open location settings
-//                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-//                            context.startActivity(intent)
-//                            return@OrderDetailDialog
-//                        }
-//
-//                        // Check ALL required permissions
-//                        val hasPermissions = AdminPermissionHandler.hasLocationPermission(mainActivity) &&
-//                                hasWakeLockPermission(context)
-//
-//                        if (!hasPermissions) {
-//                            // Store orderId to start service after permission granted
-//                            pendingOrderIdForTracking.value = orderId
-//
-//                            // Show Toast message to user
-//                            Toast.makeText(
-//                                context,
-//                                "Location and wake lock permissions are required for delivery tracking.",
-//                                Toast.LENGTH_LONG
-//                            ).show()
-//
-//                            // Request location permission
-//                            AdminPermissionHandler.requestLocationPermission(mainActivity)
-//
-//                            // WAKE_LOCK is a normal permission - automatically granted on install
-//                            // We don't need to request it separately
-//
-//                            // Update order status anyway (service will start when permission granted)
-//                        }
-//
-//                        // Update order status FIRST (this is working from your logs)
-//                        vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY") { success, errorMessage ->
-//                            if (!success) {
-//                                // Show error
-//                                coroutineScope.launch {
-//                                    snackbarHostState.showSnackbar(
-//                                        "Failed to update status: ${errorMessage ?: "Unknown error"}"
-//                                    )
-//                                }
-//                                return@updateStatusFromDialog
-//                            }
-//
-//                            // Check if we have ALL permissions NOW
-//                            if (mainActivity != null && hasWakeLockPermission(context)) {
-//                                if (AdminPermissionHandler.hasLocationPermission(mainActivity)) {
-//                                    // Start tracking service
-//                                    val intent = Intent(context, LocationUpdateService::class.java).apply {
-//                                        putExtra("ORDER_ID", orderId.toInt())
-//                                        action = "START_TRACKING"
-//                                    }
-//
-//                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                                        context.startForegroundService(intent)
-//                                    } else {
-//                                        context.startService(intent)
-//                                    }
-//
-//                                    // Show success message
-//                                    coroutineScope.launch {
-//                                        snackbarHostState.showSnackbar("Delivery tracking started!")
-//                                    }
-//
-//                                    // Log for debugging
-//                                    println("🚚 GPS Service started for order $orderId")
-//                                } else {
-//                                    // Location permission still missing
-//                                    coroutineScope.launch {
-//                                        snackbarHostState.showSnackbar("Order accepted! Location permission needed for tracking.")
-//                                    }
-//                                }
-//                            } else {
-//                                // WAKE_LOCK permission missing (shouldn't happen with WAKE_LOCK in manifest)
-//                                coroutineScope.launch {
-//                                    snackbarHostState.showSnackbar("Order accepted! Please restart app to enable tracking.")
-//                                }
-//                                println("⚠️ Order $orderId accepted but WAKE_LOCK permission missing")
-//                            }
-//
-//                            // Refresh order details
-//                            orderId.toIntOrNull()?.let { id ->
-//                                vm.loadOrderDetail(id)
-//                            }
-//                        }
-//                    },
-                    // ✅ REPLACE the onAccept block in AdminOrdersScreen.kt with this:
                     onAccept = { orderId ->
-                        // ✅ Add delivery partner ID (you need to get this from somewhere - maybe hardcoded for testing)
-                        val deliveryPartnerId = 4 // This should come from your system - for testing use 4
+                        val deliveryPartnerId = 4 // This should come from your system
 
-                        // Update order status WITH delivery_partner_id
                         vm.updateStatusFromDialog(orderId, "OUT_FOR_DELIVERY", deliveryPartnerId) { success, errorMessage ->
-                            if (!success) {
-                                coroutineScope.launch {
+                            coroutineScope.launch {
+                                if (success) {
+                                    snackbarHostState.showSnackbar("Order accepted and assigned to delivery partner!")
+                                } else {
                                     snackbarHostState.showSnackbar(
                                         "Failed to update status: ${errorMessage ?: "Unknown error"}"
                                     )
                                 }
-                                return@updateStatusFromDialog
                             }
 
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Order accepted and assigned to delivery partner!")
-                            }
-
-                            // Refresh order details
-                            orderId.toIntOrNull()?.let { id ->
-                                vm.loadOrderDetail(id)
+                            if (success) {
+                                orderId.toIntOrNull()?.let { id ->
+                                    vm.loadOrderDetail(id)
+                                }
                             }
                         }
+
+                        vm.clearSelectedOrder() // Close dialog
                     },
                     onReject = { orderId ->
-                        vm.updateStatusFromDialog(orderId, "rejected") { success, err ->
-                            coroutineScope.launch {
-                                if (success) snackbarHostState.showSnackbar("Order rejected")
-                                else snackbarHostState.showSnackbar(err ?: "Failed to reject")
-                            }
-                            vm.loadOrderDetail(orderId.toIntOrNull() ?: 0)
-                        }
+                        // Show reject reason dialog instead of immediately rejecting
+                        pendingOrderIdForRejection = orderId
+                        showRejectDialog = true
+                        // ✅ DO NOT close the main dialog here - let rejectOrderWithReason handle it
+                        // vm.clearSelectedOrder() // REMOVE THIS LINE
                     },
                     onMarkDelivered = { orderId ->
-                        // STOP GPS SERVICE
                         context.stopService(
-                            android.content.Intent(
+                            Intent(
                                 context,
-                                com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService::class.java
+                                LocationUpdateService::class.java
                             )
                         )
 
                         vm.updateStatusFromDialog(orderId, "completed") { success, err ->
                             coroutineScope.launch {
-                                if (success) snackbarHostState.showSnackbar("Order marked delivered")
-                                else snackbarHostState.showSnackbar(err ?: "Failed to update")
+                                if (success) {
+                                    snackbarHostState.showSnackbar("Order marked delivered")
+                                } else {
+                                    snackbarHostState.showSnackbar(err ?: "Failed to update")
+                                }
                             }
-                            if (success) vm.loadOrderDetail(orderId.toIntOrNull() ?: 0)
+                            if (success) {
+                                orderId.toIntOrNull()?.let { id ->
+                                    vm.loadOrderDetail(id)
+                                }
+                                vm.clearSelectedOrder() // Close dialog
+                            }
                         }
                     }
                 )
