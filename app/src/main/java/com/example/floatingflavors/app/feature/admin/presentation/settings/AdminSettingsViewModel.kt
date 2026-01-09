@@ -66,6 +66,11 @@ class AdminSettingsViewModel(
         }
     }
 
+    fun logout(onDone: () -> Unit) = viewModelScope.launch {
+        repo.logout()
+        onDone()
+    }
+
     private fun normalizeAvatarUrl(dto: AdminSettingsDto): AdminSettingsDto {
         val raw = dto.avatar_url
         val full = when {

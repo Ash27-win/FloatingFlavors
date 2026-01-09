@@ -1,5 +1,6 @@
 package com.example.floatingflavors.app.core.navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -47,11 +48,13 @@ import com.example.floatingflavors.app.feature.user.presentation.tracking.LiveTr
 import com.example.floatingflavors.app.chatbot.ChatScreen
 import com.example.floatingflavors.app.chatbot.model.ChatViewModel
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
 import com.example.floatingflavors.app.chatbot.data.ChatDatabase
 
 
 @Composable
 fun UserShell(
+    rootNavController: NavHostController,
     startRoute: String = Screen.UserHome.route
 ) {
     val navController = rememberNavController()
@@ -488,6 +491,14 @@ fun UserShell(
                     },
                     onSavedAddressClick = {
                         navController.navigate(Screen.SavedAddresses.route)
+                    },
+                    onLogoutSuccess = {
+                        Log.d("LOGOUT", "Root navigation triggered")
+                        // 🔥 THIS IS THE MISSING PIECE
+                        rootNavController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.UserRoot.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 )
             }

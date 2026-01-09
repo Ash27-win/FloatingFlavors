@@ -26,11 +26,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.floatingflavors.app.core.network.NetworkClient
@@ -47,9 +50,11 @@ import java.io.InputStream
 @Composable
 fun AdminSettingsScreen(
     viewModel: AdminSettingsViewModel,
+    rootNavController: NavHostController,
     onSignOut: (() -> Unit)? = null
 ) {
     val uiState by viewModel.state.collectAsState()
+//    val navController = rememberNavController()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -103,6 +108,7 @@ fun AdminSettingsScreen(
 
         // local state for edit dialog
         var showEditDialog by remember { mutableStateOf(false) }
+        var showLogoutDialog by remember { mutableStateOf(false) }
 
         // root column WITHOUT global horizontal padding so header is edge-to-edge.
         Column(
@@ -328,17 +334,47 @@ fun AdminSettingsScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             Button(
-                onClick = { onSignOut?.invoke() },
+                onClick = { showLogoutDialog = true },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFDC2626))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
             ) {
-                Icon(imageVector = Icons.Default.ExitToApp, contentDescription = null)
+            Icon(Icons.Default.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Sign Out", color = androidx.compose.ui.graphics.Color.White)
+                Text("Sign Out", color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(40.dp))
         }
+
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = {
+                    Text("Confirm Logout")
+                },
+                text = {
+                    Text("Are you sure you want to sign out?")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showLogoutDialog = false
+                            onSignOut?.invoke()
+                        }
+                    ) {
+                        Text("Yes, Logout", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showLogoutDialog = false }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
 
         // Edit dialog (modal)
         if (showEditDialog) {

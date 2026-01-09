@@ -44,11 +44,17 @@ class SettingsViewModel(
         }
     }
 
-    fun logout() {
+    fun logout(onLogoutSuccess: () -> Unit) {
         viewModelScope.launch {
-            repository.logout(TEMP_USER_ID)
+            try {
+                repository.logout(TEMP_USER_ID)
+                onLogoutSuccess()
+            } catch (e: Exception) {
+                // optional: handle error / toast later
+            }
         }
     }
+
 
     fun deleteAccount() {
         viewModelScope.launch {

@@ -22,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.NavHostController
 import com.example.floatingflavors.app.feature.admin.presentation.dashboard.AdminDashboardScreen
 import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminMenuInventoryScreen
 import com.example.floatingflavors.app.feature.admin.presentation.menu.AdminAddFoodScreen
@@ -37,7 +38,7 @@ import com.example.floatingflavors.app.feature.admin.presentation.settings.Admin
 import com.example.floatingflavors.app.core.network.NetworkClient
 
 @Composable
-fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
+fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen.AdminDashboard.route) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -134,8 +135,18 @@ fun AdminShell(startRoute: String = Screen.AdminDashboard.route) {
                     }
                 }
 
-                // call the composable normally (no try/catch)
-                AdminSettingsScreen(viewModel = vm)
+                AdminSettingsScreen(
+                    viewModel = vm,
+                    rootNavController = rootNavController,
+                    onSignOut = {
+                        rootNavController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.AdminRoot.route) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
         }
     }

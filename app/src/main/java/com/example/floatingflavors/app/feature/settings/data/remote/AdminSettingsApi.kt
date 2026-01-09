@@ -30,6 +30,10 @@ interface AdminSettingsApi {
         @Part("admin_id") adminId: Int,
         @Part avatar: MultipartBody.Part
     ): ApiResponse<Map<String, String>>
+
+    @POST("admin_logout.php")
+    suspend fun logout(): ApiResponse<Unit>
+
 }
 
 

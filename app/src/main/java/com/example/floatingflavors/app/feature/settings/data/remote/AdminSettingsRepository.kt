@@ -23,6 +23,8 @@ class AdminSettingsRepository(private val api: AdminSettingsApi) {
     ): ApiResponse<Map<String, String>> =
         safeCall { api.uploadAvatar(adminId, part) }
 
+    suspend fun logout() = api.logout()
+
     private inline fun <T> safeCall(
         block: () -> ApiResponse<T>
     ): ApiResponse<T> {

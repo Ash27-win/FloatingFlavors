@@ -170,15 +170,15 @@ fun AppNavHost(navController: NavHostController = rememberNavController(), start
 
         // These are the two root containers. They each host their own inner nav graphs.
         composable(Screen.AdminRoot.route) {
-            AdminShell() // AdminShell has its own NavController and inner navhost
+            AdminShell(rootNavController = navController)
         }
 
         composable(Screen.UserRoot.route) {
-            UserShell()  // UserShell has its own NavController and inner navhost
+            UserShell(rootNavController = navController)
         }
 
         composable(Screen.DeliveryRoot.route) {
-            DeliveryShell() // DeliveryShell has its own NavController and inner navhost
+            DeliveryShell(rootNavController = navController)
         }
     }
 }

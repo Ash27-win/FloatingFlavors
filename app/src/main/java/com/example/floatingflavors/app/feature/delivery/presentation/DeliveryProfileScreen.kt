@@ -18,7 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DeliveryProfileScreen() {
+fun DeliveryProfileScreen(onLogout: () -> Unit) {
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         bottomBar = {
             ProfileBottomNavigationBar()
@@ -55,13 +58,39 @@ fun DeliveryProfileScreen() {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Log Out Button
-            ProfileLogOutButton()
+            ProfileLogOutButton(
+                onClick = { showLogoutDialog = true }
+            )
+
 
             Spacer(modifier = Modifier.weight(1f))
 
             // Version Info
             ProfileVersionInfo()
         }
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Confirm Logout") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
+                    Text("Yes, Logout", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -334,7 +363,7 @@ fun ProfileSettingsItem(
 }
 
 @Composable
-fun ProfileLogOutButton() {
+fun ProfileLogOutButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -343,7 +372,7 @@ fun ProfileLogOutButton() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* Handle logout */ }
+                .clickable { onClick() }
                 .padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center

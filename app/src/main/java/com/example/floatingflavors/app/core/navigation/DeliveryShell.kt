@@ -15,6 +15,7 @@ import com.example.floatingflavors.app.core.navigation.Screen
 import com.example.floatingflavors.app.feature.delivery.presentation.DeliveryDashboardScreen
 import com.example.floatingflavors.app.feature.delivery.presentation.DeliveryProfileScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.floatingflavors.app.core.network.NetworkClient
@@ -26,7 +27,8 @@ import com.example.floatingflavors.app.feature.delivery.presentation.DeliveryOrd
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DeliveryShell(
-    startRoute: String = Screen.DeliveryDashboard.route
+    startRoute: String = Screen.DeliveryDashboard.route,
+    rootNavController: NavHostController
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -122,7 +124,14 @@ fun DeliveryShell(
             }
 
             composable(Screen.DeliveryProfile.route) {
-                DeliveryProfileScreen()
+                DeliveryProfileScreen(
+                    onLogout = {
+                        rootNavController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.DeliveryRoot.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
         }
     }

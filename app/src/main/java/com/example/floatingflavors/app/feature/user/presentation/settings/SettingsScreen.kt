@@ -34,9 +34,11 @@ fun SettingsScreen(
     onNavigateTerms: () -> Unit,
     onNavigatePrivacy: () -> Unit,
     onSavedAddressClick: () -> Unit,
+    onLogoutSuccess: () -> Unit
 
     ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     BackHandler { onBack() }
 
@@ -275,7 +277,7 @@ fun SettingsScreen(
                             iconTint = Color(0xFFEF4444),
                             textColor = Color(0xFFEF4444),
                             showChevron = false,
-                            onClick = { viewModel.logout() }
+                            onClick = { showLogoutDialog = true }
                         )
                         DarkDivider()
                         SettingsRow(
@@ -318,6 +320,33 @@ fun SettingsScreen(
             }
         }
     }
+
+    /* ---------------- LOGOUT DIALOG ---------------- */
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Log out") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutDialog = false
+                    viewModel.logout {
+                        onLogoutSuccess()
+                    }
+
+                }) {
+                    Text("Yes", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("No")
+                }
+            }
+        )
+    }
+
 
     /* ---------------- DELETE DIALOG ---------------- */
 
