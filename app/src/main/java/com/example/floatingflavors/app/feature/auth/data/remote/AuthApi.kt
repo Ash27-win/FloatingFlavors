@@ -1,9 +1,13 @@
 package com.example.floatingflavors.app.feature.auth.data.remote
 
+import com.example.floatingflavors.app.feature.auth.data.remote.dto.ApiResponse
+import com.example.floatingflavors.app.feature.auth.data.remote.dto.ForgotPasswordRequest
 import com.example.floatingflavors.app.feature.auth.data.remote.dto.LoginRequestDto
 import com.example.floatingflavors.app.feature.auth.data.remote.dto.LoginResponseDto
 import com.example.floatingflavors.app.feature.auth.data.remote.dto.RegisterRequestDto
+import com.example.floatingflavors.app.feature.auth.data.remote.dto.ResetPasswordRequest
 import com.example.floatingflavors.app.feature.auth.data.remote.dto.SimpleResponseDto
+import com.example.floatingflavors.app.feature.auth.data.remote.dto.VerifyOtpRequest
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -18,4 +22,15 @@ interface AuthApi {
     suspend fun login(
         @Body body: LoginRequestDto
     ): LoginResponseDto
+
+    @POST("forgot_password.php")
+    suspend fun sendOtp(@Body request: ForgotPasswordRequest): ApiResponse
+
+
+    @POST("verify_otp.php")
+    suspend fun verifyOtp(@Body request: VerifyOtpRequest): ApiResponse
+
+
+    @POST("reset_password.php")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): ApiResponse
 }

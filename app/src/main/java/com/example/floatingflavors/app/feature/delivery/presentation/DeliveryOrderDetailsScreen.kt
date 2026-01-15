@@ -3,6 +3,7 @@ package com.example.floatingflavors.app.feature.delivery.presentation
 import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
@@ -13,14 +14,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,9 +47,7 @@ fun DeliveryOrderDetailsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val pickupAddress by viewModel.pickupAddress.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadOrderDetails()
-    }
+    LaunchedEffect(Unit) { viewModel.loadOrderDetails() }
 
     if (isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -60,132 +58,267 @@ fun DeliveryOrderDetailsScreen(
 
     val data = order ?: return
 
-    // 🔥 CORE LOGIC (DO NOT CHANGE)
     val canAccept =
         data.deliveryPartnerId == null &&
                 (data.status == "CONFIRMED" || data.status == "PREPARING")
 
-    val isAccepted =
-        data.deliveryPartnerId == deliveryPartnerId.toString() &&
-                data.status == "OUT_FOR_DELIVERY"
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F7F7))
+            .background(Color(0xFFF8F7F6))
             .verticalScroll(rememberScrollState())
     ) {
 
+        /* ---------------- TOP BAR ---------------- */
         TopAppBar(
             title = { Text("Order Details", fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, null)
                 }
+            },
+            actions = {
+                IconButton(onClick = {}) {
+                    Icon(Icons.Default.HelpOutline, null)
+                }
             }
         )
 
+        /* ---------------- MAP PREVIEW (STATIC) ---------------- */
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(140.dp)
                 .background(Color(0xFFE5E5E5))
         )
 
         Column(Modifier.padding(16.dp)) {
 
-            Text(
-                text = "Order #FF-${data.id}",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
+            /* ---------------- ORDER HEADER ---------------- */
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Order #FF-${data.id}",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Spacer(Modifier.width(12.dp))
+                Surface(
+                    color = Color(0xFFE6F7EC),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(
+                        "NEW REQUEST",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Color(0xFF16A34A),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row {
+                InfoChip(Icons.Default.Payments, "Online Payment")
+                Spacer(Modifier.width(8.dp))
+                InfoChip(Icons.Default.Schedule, "Est. 25 mins")
+            }
 
             Spacer(Modifier.height(16.dp))
 
-            Card(shape = RoundedCornerShape(20.dp)) {
+            /* ---------------- PICKUP / DROP CARD ---------------- */
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
                 Column(Modifier.padding(16.dp)) {
-                    LocationRow(
-                        "PICKUP",
-                        "Your Live Location",
-                        pickupAddress,
-                        Icons.Default.Navigation
+
+                    LocationItem(
+                        iconBg = Color(0xFFFFEDD5),
+                        icon = Icons.Default.Store,
+                        title = "PICKUP",
+                        name = "Floating Flavors Hub A",
+                        address = pickupAddress,
+                        extra = "1.2 mi away"
                     )
-                    Spacer(Modifier.height(12.dp))
-                    LocationRow(
-                        "DROP-OFF",
-                        "Customer Address",
-                        data.deliveryAddress ?: "Address unavailable",
-                        Icons.Default.Navigation
+
+                    Spacer(Modifier.height(16.dp))
+
+                    LocationItem(
+                        iconBg = Color(0xFFFEE2E2),
+                        icon = Icons.Default.LocationOn,
+                        title = "DROP-OFF",
+                        name = "Home",
+                        address = data.deliveryAddress ?: "Address unavailable",
+                        extra = "Leave at door"
                     )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            /* ---------------- CUSTOMER CARD ---------------- */
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color(0xFFE5E5E5), CircleShape)
+                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column(Modifier.weight(1f)) {
+                        Text(data.customerName, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Customer since 2021",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+
+                    IconButton(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .border(1.dp, Color(0xFFEA580C), CircleShape),
+                        onClick = {
+                            data.customerPhone?.let {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_DIAL, Uri.parse("tel:$it"))
+                                )
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Call, null, tint = Color(0xFFEA580C))
+                    }
                 }
             }
 
             Spacer(Modifier.height(24.dp))
 
-            // ✅ ACCEPT / REJECT
+            /* ---------------- ACTION BUTTONS ---------------- */
             if (canAccept) {
-
-                Button(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-
-                        if (!DeliveryPermissionHandler.hasLocationPermission(activity)) {
-                            DeliveryPermissionHandler.requestLocationPermission(activity)
-                            Toast.makeText(context, "Allow location permission", Toast.LENGTH_LONG).show()
-                            return@Button
-                        }
-
-                        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                        if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                            context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                            Toast.makeText(context, "Turn ON GPS to accept order", Toast.LENGTH_LONG).show()
-                            return@Button
-                        }
-
-                        viewModel.acceptOrderAndStartTracking(context)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.rejectOrder() }
+                    ) {
+                        Text("Reject")
                     }
-                ) {
-                    Text("Accept Order")
-                }
 
-                Spacer(Modifier.height(12.dp))
+                    Button(
+                        modifier = Modifier.weight(2f),
+                        colors = ButtonDefaults.buttonColors(Color(0xFFEA580C)),
+                        onClick = {
 
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { viewModel.rejectOrder() }
-                ) {
-                    Text("Reject")
-                }
-            }
+                            if (!DeliveryPermissionHandler.hasLocationPermission(activity)) {
+                                DeliveryPermissionHandler.requestLocationPermission(activity)
+                                Toast.makeText(
+                                    context,
+                                    "Allow location permission",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
 
-            // ✅ MARK AS DELIVERED — ONLY AFTER ACCEPT
-            if (isAccepted) {
-                Spacer(Modifier.height(20.dp))
-                Button(
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    colors = ButtonDefaults.buttonColors(Color(0xFF2563EB)),
-                    onClick = { viewModel.markAsDelivered(context) }
-                ) {
-                    Text("Mark as Delivered")
+                            val lm =
+                                context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                            if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                                )
+                                Toast.makeText(
+                                    context,
+                                    "Turn ON GPS to accept order",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+
+                            viewModel.acceptOrderAndStartTracking(context)
+                        }
+                    ) {
+                        Text("Accept Order →")
+                    }
                 }
             }
         }
     }
 }
 
+/* ---------------- COMPONENTS ---------------- */
+
 @Composable
-private fun LocationRow(
+private fun InfoChip(icon: ImageVector, text: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF1F1F1)
+    ) {
+        Row(
+            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, null, Modifier.size(16.dp), tint = Color.Gray)
+            Spacer(Modifier.width(4.dp))
+            Text(text, fontSize = 12.sp, color = Color.Gray)
+        }
+    }
+}
+
+@Composable
+private fun LocationItem(
+    iconBg: Color,
+    icon: ImageVector,
     title: String,
     name: String,
     address: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
+    extra: String
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.Top) {
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(iconBg, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = Color(0xFFEA580C))
+            }
+            Spacer(
+                Modifier
+                    .width(1.dp)
+                    .height(32.dp)
+                    .background(Color(0xFFE5E7EB))
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
         Column(Modifier.weight(1f)) {
             Text(title, fontSize = 12.sp, color = Color.Gray)
             Text(name, fontWeight = FontWeight.Bold)
-            Text(address, fontSize = 12.sp, color = Color.Gray)
+            Text(address, fontSize = 13.sp, color = Color.Gray)
+            Text(extra, fontSize = 12.sp, color = Color(0xFFEA580C))
         }
-        Icon(icon, contentDescription = null, tint = Color(0xFFFF7A00))
+
+        Icon(
+            Icons.Default.Navigation,
+            null,
+            tint = Color(0xFFEA580C),
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color(0xFFFFEDD5), CircleShape)
+                .padding(8.dp)
+        )
     }
 }

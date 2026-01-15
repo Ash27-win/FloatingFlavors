@@ -8,6 +8,9 @@ data class DeliveryOrderData(
     @SerializedName("customer_name")
     val customerName: String?,
 
+    @SerializedName("customer_phone")
+    val customerPhone: String?,
+
     val status: String?,
     val amount: String?,
 

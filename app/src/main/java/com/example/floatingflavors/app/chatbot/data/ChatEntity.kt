@@ -8,5 +8,9 @@ data class ChatEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val text: String,
     val isUser: Boolean,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+
+    // ✅ GROUP SUPPORT (default = single chat)
+    val senderName: String? = null,
+    val groupId: String? = null
 )

@@ -3,6 +3,7 @@ package com.example.floatingflavors.app.feature.delivery.data
 import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryApi
 import com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryDashboardResponse
+import com.example.floatingflavors.app.feature.delivery.data.remote.LiveLocationData
 import com.example.floatingflavors.app.feature.delivery.data.remote.OrderTrackingResponse
 import com.example.floatingflavors.app.feature.delivery.data.remote.SimpleResponseDto
 
@@ -89,6 +90,16 @@ class DeliveryRepository(
             )
         }
     }
+
+    suspend fun getLastLiveLocation(orderId: Int): LiveLocationData? {
+        return try {
+            val res = api.getLiveLocation(orderId)
+            if (res.success) res.location else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
 
     // ✅ Get live location (reuses existing get_order_location.php)
     suspend fun getLiveLocation(orderId: Int): LiveLocationResponse {

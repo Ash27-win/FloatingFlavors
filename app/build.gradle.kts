@@ -65,6 +65,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.animation.core)
     implementation(libs.play.services.location)
+    implementation(libs.androidx.compose.runtime.saveable)
+    implementation(libs.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

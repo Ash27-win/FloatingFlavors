@@ -3,62 +3,71 @@ package com.example.floatingflavors.app.chatbot.model
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.floatingflavors.app.chatbot.ChatRepository
+import com.example.floatingflavors.app.chatbot.data.ChatEntity
+import com.example.floatingflavors.app.chatbot.data.CorporateDto
+import com.example.floatingflavors.app.chatbot.data.EventDto
+import com.example.floatingflavors.app.chatbot.data.OrderDto
+import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
-data class ChatMessage(
-    val text: String,
-    val isUser: Boolean,
-    val isTyping: Boolean = false
-)
 
 class ChatViewModel(
     private val repository: ChatRepository
 ) : ViewModel() {
 
-    private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
-    val messages: StateFlow<List<ChatMessage>> = _messages
+    // 🔹 Chat text messages (Room)
+    private val _messages = MutableStateFlow<List<ChatEntity>>(emptyList())
+    val messages: StateFlow<List<ChatEntity>> = _messages
 
-    private var welcomeSent = false   // 🔐 important
+    // 🔹 Menu results
+    private val _menuItems = MutableStateFlow<List<MenuItemDto>>(emptyList())
+    val menuItems: StateFlow<List<MenuItemDto>> = _menuItems
 
-    /** 🔥 AUTO WELCOME */
-    fun sendWelcomeIfNeeded(userId: Int) {
-        if (welcomeSent || _messages.value.isNotEmpty()) return
+    // 🔹 Order history
+    private val _orders = MutableStateFlow<List<OrderDto>>(emptyList())
+    val orders: StateFlow<List<OrderDto>> = _orders
 
-        welcomeSent = true
+    // 🔹 Event history
+    private val _events = MutableStateFlow<List<EventDto>>(emptyList())
+    val events: StateFlow<List<EventDto>> = _events
 
-        // typing indicator
-        _messages.value = _messages.value + ChatMessage("Typing...", false, true)
+    // 🔹 Corporate history
+    private val _corporates = MutableStateFlow<List<CorporateDto>>(emptyList())
+    val corporates: StateFlow<List<CorporateDto>> = _corporates
 
+    fun loadMessages() {
         viewModelScope.launch {
-            try {
-                val reply = repository.sendMessage(userId, "__WELCOME__")
-                _messages.value =
-                    _messages.value.dropLast(1) + ChatMessage(reply, false)
-            } catch (e: Exception) {
-                _messages.value =
-                    _messages.value.dropLast(1) +
-                            ChatMessage("Welcome to Floating Flavors 👋", false)
-            }
+            _messages.value = repository.getMessages()
         }
     }
 
-    /** NORMAL USER MESSAGE */
     fun sendMessage(userId: Int, text: String) {
-        _messages.value = _messages.value + ChatMessage(text, true)
-        _messages.value = _messages.value + ChatMessage("Typing...", false, true)
-
         viewModelScope.launch {
-            try {
-                val reply = repository.sendMessage(userId, text)
-                _messages.value =
-                    _messages.value.dropLast(1) + ChatMessage(reply, false)
-            } catch (e: Exception) {
-                _messages.value =
-                    _messages.value.dropLast(1) +
-                            ChatMessage("Something went wrong 😢", false)
+            val response = repository.sendMessage(userId, text)
+
+            // 🔹 CLEAR OLD STRUCTURED DATA
+            _menuItems.value = emptyList()
+            _orders.value = emptyList()
+            _events.value = emptyList()
+            _corporates.value = emptyList()
+
+            when (response.type) {
+                "menu_result" -> {
+                    _menuItems.value = response.menu_items ?: emptyList()
+                }
+                "order_history" -> {
+                    _orders.value = response.orders ?: emptyList()
+                }
+                "event_history" -> {
+                    _events.value = response.events ?: emptyList()
+                }
+                "corporate_history" -> {
+                    _corporates.value = response.corporate_bookings ?: emptyList()
+                }
             }
+
+            loadMessages()
         }
     }
 }

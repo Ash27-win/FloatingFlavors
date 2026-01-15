@@ -28,6 +28,8 @@ foundationLayout = "1.10.0"
 roomKtx = "2.8.4"
 animationCore = "1.10.0"
 playServicesLocation = "21.3.0"
+runtimeSaveable = "1.10.1"
+androidxFoundation = "1.10.1"
 
 
 #composeUi = "1.9.5"
@@ -64,6 +66,8 @@ androidx-compose-foundation-layout = { group = "androidx.compose.foundation", na
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" }
+foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "androidxFoundation" }
 
 
 #androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }

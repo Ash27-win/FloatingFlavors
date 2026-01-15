@@ -6,6 +6,14 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
 
+    object ForgotPassword : Screen("forgot_password")
+    object VerifyOtp : Screen("verify_otp/{email}") {
+        fun createRoute(email: String) = "verify_otp/$email"
+    }
+    object ResetPassword : Screen("reset_password/{email}") {
+        fun createRoute(email: String) = "reset_password/$email"
+    }
+
     // Root containers
     object AdminRoot : Screen("admin_root")
     object UserRoot : Screen("user_root")

@@ -1,5 +1,6 @@
 package com.example.floatingflavors.app.chatbot
 
+import com.example.floatingflavors.app.chatbot.data.ChatBotResponse
 import com.example.floatingflavors.app.chatbot.data.ChatDao
 import com.example.floatingflavors.app.chatbot.data.ChatEntity
 import com.example.floatingflavors.app.chatbot.data.ChatRequest
@@ -9,34 +10,26 @@ class ChatRepository(
     private val dao: ChatDao
 ) {
 
-    suspend fun sendMessage(userId: Int, text: String): String {
+    suspend fun sendMessage(
+        userId: Int,
+        message: String
+    ): ChatBotResponse {
 
         // Save user message
-        dao.insert(
-            ChatEntity(
-                text = text,
-                isUser = true
-            )
-        )
+        dao.insert(ChatEntity(text = message, isUser = true))
 
-        // API call
         val response = api.sendMessage(
-            ChatRequest(
-                user_id = userId,
-                message = text
-            )
+            ChatRequest(user_id = userId, message = message)
         )
 
-        // Save bot reply
-        dao.insert(
-            ChatEntity(
-                text = response.reply,
-                isUser = false
-            )
-        )
+        // Save bot text ONLY if reply exists
+        response.reply?.let {
+            dao.insert(ChatEntity(text = it, isUser = false))
+        }
 
-        return response.reply
+        return response
     }
 
-    suspend fun getHistory(): List<ChatEntity> = dao.getAll()
+    suspend fun getMessages() = dao.getAll()
 }
+
