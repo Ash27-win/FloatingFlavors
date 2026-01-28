@@ -46,6 +46,7 @@ data class HomeResponseDto(
 data class UserStats(
     val userId: Int,
     val userName: String,
+    val role: String, // ✅ Added for Auto-Login Logic
     val totalOrders: Int,
     val loyaltyPoints: Int
 )

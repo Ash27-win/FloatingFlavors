@@ -175,7 +175,7 @@ fun UserHomeScreen(
                     )
                 ) {
                     ChatScreen(
-                        userId = 1,
+                        userId = com.example.floatingflavors.app.core.UserSession.userId,
                         viewModel = chatViewModel
                     )
                 }

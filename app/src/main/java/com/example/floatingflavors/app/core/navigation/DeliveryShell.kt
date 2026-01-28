@@ -75,7 +75,7 @@ fun DeliveryShell(
 
             composable(Screen.DeliveryDashboard.route) {
 
-                val deliveryPartnerId = 4 // TODO: from login/session
+                val deliveryPartnerId = com.example.floatingflavors.app.core.UserSession.userId
 
                 val repository = DeliveryRepository(NetworkClient.deliveryApi)
 
@@ -142,7 +142,7 @@ fun DeliveryShell(
             ) { backStackEntry ->
 
                 val orderId = backStackEntry.arguments!!.getInt("orderId")
-                val deliveryPartnerId = 4 // TODO: from login/session
+                val deliveryPartnerId = com.example.floatingflavors.app.core.UserSession.userId
 
                 // ✅ ViewModel WITHOUT factory (factory was removed)
                 val trackingVm: DeliveryTrackingViewModel = viewModel()
@@ -158,8 +158,15 @@ fun DeliveryShell(
             /* ---------------- PROFILE ---------------- */
 
             composable(Screen.DeliveryProfile.route) {
+                // Get context for logout
+                val context = androidx.compose.ui.platform.LocalContext.current
+
                 DeliveryProfileScreen(
                     onLogout = {
+                        // 🔥 Clear Session
+                        com.example.floatingflavors.app.core.auth.TokenManager.get(context).clearTokens()
+                        com.example.floatingflavors.app.core.UserSession.userId = 0
+
                         rootNavController.navigate(Screen.Login.route) {
                             popUpTo(Screen.DeliveryRoot.route) { inclusive = true }
                             launchSingleTop = true

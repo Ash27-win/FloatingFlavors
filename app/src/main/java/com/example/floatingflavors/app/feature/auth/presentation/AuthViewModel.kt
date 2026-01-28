@@ -30,6 +30,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         email: String,
         password: String,
         role: String,
+        isRememberMe: Boolean,
         onSuccess: (role: String) -> Unit
     ) {
         if (email.isBlank() || password.isBlank() || role == "Select") {
@@ -44,12 +45,24 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val response = repository.login(email, password, role)
                 if (response.success && response.data != null) {
-                    val user = response.data
+                    val loginData = response.data
+                    val user = loginData.user
 
                     Log.d("LOGIN", "Login success userId=${user.id}")
+                    
+                    // SAVE TOKENS & ROLE
+                    val tokenManager = com.example.floatingflavors.app.core.auth.TokenManager.get(getApplication())
+                    tokenManager.saveTokens(loginData.accessToken, loginData.refreshToken)
+                    tokenManager.saveRole(user.role)
+                    tokenManager.saveUserId(user.id)
+                    tokenManager.saveRememberMe(isRememberMe)
 
+                    // GLOBAL SESSION
+                    com.example.floatingflavors.app.core.UserSession.userId = user.id
+
+                    loggedInUser = user
                     isLoading = false
-                    onSuccess(user.role ?: role)
+                    onSuccess(user.role)
                 } else {
                     isLoading = false
                     errorMessage = response.message

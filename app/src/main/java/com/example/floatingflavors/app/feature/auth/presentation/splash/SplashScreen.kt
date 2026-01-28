@@ -18,17 +18,32 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onFinished: () -> Unit
+    onNavigateToDashboard: (String) -> Unit,
+    onNavigateToLogin: () -> Unit,
+    vm: SplashViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
+    val event = vm.splashEvent
+
     LaunchedEffect(Unit) {
-        delay(3000)   // 3 seconds
-        onFinished()
+        vm.checkAutoLogin()
+    }
+
+    LaunchedEffect(event) {
+        when (event) {
+            is SplashEvent.NavigateToHome -> {
+                onNavigateToDashboard(event.role)
+            }
+            is SplashEvent.NavigateToLogin -> {
+                onNavigateToLogin()
+            }
+            else -> {}
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),   // or light grey like your design
+            .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
         Image(

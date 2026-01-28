@@ -194,6 +194,7 @@ fun LoginScreen(
                             email = email,
                             password = password,
                             role = selectedRole,
+                            isRememberMe = rememberMe,
                             onSuccess = { role ->
                                 onLoginClick(role)
                             }

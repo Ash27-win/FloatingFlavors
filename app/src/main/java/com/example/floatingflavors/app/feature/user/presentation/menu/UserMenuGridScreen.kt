@@ -35,7 +35,7 @@ fun UserMenuGridScreen(
     onItemClick: (MenuItemDto) -> Unit = {}
 ) {
     // 🔥 TEMP USER ID (SessionManager removed ONLY)
-    val userId = 1
+    val userId = com.example.floatingflavors.app.core.UserSession.userId
 
     val cartState by cartVm.uiState.collectAsState()
     val cartItems: List<CartItemDto> =

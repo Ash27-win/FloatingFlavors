@@ -25,7 +25,7 @@ fun CheckoutBottomSheet(
     vm: CheckoutViewModel = viewModel()
 ) {
     // 🔥 TEMP USER ID
-    val userId = 1
+    val userId = com.example.floatingflavors.app.core.UserSession.userId
 
     val state by vm.uiState.collectAsState()
     val payment by vm.payment.collectAsState()

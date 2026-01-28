@@ -203,7 +203,7 @@ fun UserShell(
                 }
             ) {
                 ChatScreen(
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     viewModel = chatViewModel
                 )
             }
@@ -224,7 +224,7 @@ fun UserShell(
 
                 BookingScreen(
                     vm = bookingVm,
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     onNavigateToMenu = { bookingId ->
                         // bookingId is already Int from BookingViewModel's navigation
                         navController.navigate(
@@ -279,7 +279,7 @@ fun UserShell(
 
                 CheckoutAddressScreen(
                     vm = checkoutAddressVm,
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     onBack = { navController.popBackStack() },
                     onAddAddress = {
                         navController.navigate(Screen.AddAddress.route)
@@ -308,7 +308,7 @@ fun UserShell(
 
                 CheckoutSummaryScreen(
                     vm = checkoutSummaryVm,
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     bookingId = bookingId,
                     addressId = addressId,
                     onBack = { navController.popBackStack() },
@@ -383,7 +383,8 @@ fun UserShell(
                     UserOrdersViewModel(
                         ordersRepository = OrdersRepository(),
                         bookingRepository = BookingRepository(NetworkClient.bookingApi),
-                        userId = 1
+                        userId = com.example.floatingflavors.app.core.UserSession.userId
+
                     )
                 }
 
@@ -412,7 +413,8 @@ fun UserShell(
                     OrderDetailsViewModel(
                         ordersRepo = UserOrdersRepository(NetworkClient.userOrdersApi),
                         addressRepo = AddressRepository(NetworkClient.addressApi),
-                        userId = 1
+                        userId = com.example.floatingflavors.app.core.UserSession.userId
+
                     )
                 }
 
@@ -471,8 +473,12 @@ fun UserShell(
 
             composable(Screen.UserProfile.route) {
 
+                val context = LocalContext.current
+                val application = context.applicationContext as android.app.Application
+
                 val settingsVm = remember {
                     SettingsViewModel(
+                        application,
                         UserSettingsRepository(NetworkClient.userSettingsApi)
                     )
                 }
@@ -528,7 +534,7 @@ fun UserShell(
             composable(Screen.SavedAddresses.route) {
                 SavedAddressScreen(
                     vm = addressViewModel,
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     onBack = { navController.popBackStack() },
                     onAdd = {
                         navController.navigate(Screen.AddAddress.route)
@@ -544,7 +550,7 @@ fun UserShell(
             composable(Screen.AddAddress.route) {
                 AddAddressScreen(
                     vm = addressViewModel,
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -563,7 +569,7 @@ fun UserShell(
                 EditAddressScreen(
                     vm = editAddressViewModel,
                     address = address,
-                    userId = 1,
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
                     onBack = { navController.popBackStack() }
                 )
             }

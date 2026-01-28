@@ -52,6 +52,15 @@ class TokenManager private constructor(context: Context) {
         }
     }
     private val KEY_ROLE = "user_role"
+    private val KEY_USER_ID = "user_id"
+
+    fun saveUserId(id: Int) {
+        prefs.edit().putInt(KEY_USER_ID, id).apply()
+    }
+
+    fun getUserId(): Int {
+        return prefs.getInt(KEY_USER_ID, 0)
+    }
 
     fun saveRole(role: String) {
         prefs.edit().putString(KEY_ROLE, role).apply()
@@ -59,6 +68,17 @@ class TokenManager private constructor(context: Context) {
 
     fun getRole(): String? {
         return prefs.getString(KEY_ROLE, null)
+    }
+
+    private val KEY_REMEMBER_ME = "remember_me"
+
+    fun saveRememberMe(remember: Boolean) {
+        prefs.edit().putBoolean(KEY_REMEMBER_ME, remember).apply()
+    }
+
+    fun getRememberMe(): Boolean {
+        // Default to true (standard mobile behavior) unless explicitly set to false
+        return prefs.getBoolean(KEY_REMEMBER_ME, true)
     }
 
     fun clearAll() {

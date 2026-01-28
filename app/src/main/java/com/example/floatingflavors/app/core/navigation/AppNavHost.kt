@@ -150,9 +150,28 @@ fun AppNavHost(navController: NavHostController = rememberNavController(), start
     NavHost(navController = navController, startDestination = startDestination, modifier = modifier) {
 
         composable(Screen.Splash.route) {
-            SplashScreen(onFinished = {
-                navController.navigate(Screen.Onboarding.route) { popUpTo(Screen.Splash.route) { inclusive = true } }
-            })
+            SplashScreen(
+                onNavigateToDashboard = { role ->
+                    // Auto-Login Success
+                    when (role) {
+                        "Admin" -> navController.navigate(Screen.AdminRoot.route) {
+                             popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                        "User" -> navController.navigate(Screen.UserRoot.route) {
+                             popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                        "Delivery" -> navController.navigate(Screen.DeliveryRoot.route) {
+                             popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    }
+                },
+                onNavigateToLogin = {
+                    // No Token / Expired -> Go to Onboarding
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Screen.Onboarding.route) {

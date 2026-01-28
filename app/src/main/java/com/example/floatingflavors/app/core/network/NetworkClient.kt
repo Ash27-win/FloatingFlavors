@@ -1,6 +1,6 @@
 package com.example.floatingflavors.app.core.network
 
-
+import android.content.Context
 import com.example.floatingflavors.app.chatbot.ChatApi
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminSettingsApi
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.data.AdminLocationApi
@@ -41,37 +41,52 @@ object NetworkClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val httpClient = OkHttpClient.Builder()
-        .addInterceptor(logging)
-        .build()
+    private var applicationContext: Context? = null
 
-    val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(httpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    fun init(context: Context) {
+        applicationContext = context.applicationContext
+    }
 
-    val chatbotRetrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(CHATBOT_BASE_URL)
-        .client(httpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private val httpClient: OkHttpClient by lazy {
+        val ctx = applicationContext ?: throw IllegalStateException("NetworkClient must be initialized with context!")
+        OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .addInterceptor(AuthInterceptor(ctx))
+            .authenticator(TokenAuthenticator(ctx)) // 🔥 Silent Refresh Logic
+            .build()
+    }
+
+    val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val chatbotRetrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(CHATBOT_BASE_URL)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
     val chatApi: ChatApi by lazy {
         chatbotRetrofit.create(ChatApi::class.java)
     }
 
 
-    val authApi: AuthApi = retrofit.create(AuthApi::class.java)
+    val authApi: AuthApi by lazy { retrofit.create(AuthApi::class.java) }
 
     // === NEW: Menu API for menu endpoints ===
-    val menuApi: MenuApi = retrofit.create(MenuApi::class.java)
+    val menuApi: MenuApi by lazy { retrofit.create(MenuApi::class.java) }
 
     // === NEW: Orders API ===
-    val ordersApi: OrdersApi = retrofit.create(OrdersApi::class.java)
+    val ordersApi: OrdersApi by lazy { retrofit.create(OrdersApi::class.java) }
 
     // inside object NetworkClient (near other api fields)
-    val adminSettingsApi: AdminSettingsApi = retrofit.create(AdminSettingsApi::class.java)
+    val adminSettingsApi: AdminSettingsApi by lazy { retrofit.create(AdminSettingsApi::class.java) }
 
     // User Home Screen API
     val homeApi: HomeApi by lazy {
@@ -84,7 +99,7 @@ object NetworkClient {
     }
 
     // Checkout API
-    val checkoutApi: CheckoutApi = retrofit.create(CheckoutApi::class.java)
+    val checkoutApi: CheckoutApi by lazy { retrofit.create(CheckoutApi::class.java) }
 
     val userSettingsApi: UserSettingsApi by lazy {
         retrofit.create(UserSettingsApi::class.java)
@@ -112,8 +127,9 @@ object NetworkClient {
         retrofit.create(AddressCheckoutApi::class.java)
     }
 
-    val checkoutSummaryApi: CheckoutSummaryApi =
+    val checkoutSummaryApi: CheckoutSummaryApi by lazy {
         retrofit.create(CheckoutSummaryApi::class.java)
+    }
 
     val paymentApi: PaymentApi by lazy {
         retrofit.create(PaymentApi::class.java)
@@ -123,8 +139,9 @@ object NetworkClient {
         retrofit.create(UserOrdersApi::class.java)
     }
 
-    val orderTrackingApi: OrderTrackingApi =
+    val orderTrackingApi: OrderTrackingApi by lazy {
         retrofit.create(OrderTrackingApi::class.java)
+    }
 
     val adminLocationApi: AdminLocationApi by lazy {
         retrofit.create(AdminLocationApi::class.java)
@@ -140,7 +157,8 @@ object NetworkClient {
     }
 
     // Delivery concept
-    val deliveryApi: DeliveryApi =
+    val deliveryApi: DeliveryApi by lazy {
         retrofit.create(DeliveryApi::class.java)
+    }
 
 }

@@ -26,6 +26,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Init Network with Context for AuthInterceptor
+        com.example.floatingflavors.app.core.network.NetworkClient.init(this)
 
         // Initialize osmdroid
         OsmConfiguration.getInstance().load(

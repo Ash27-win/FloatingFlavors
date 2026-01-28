@@ -5,25 +5,17 @@ import com.example.floatingflavors.app.core.auth.TokenManager
 import okhttp3.Interceptor
 import okhttp3.Response
 
-class AuthInterceptor(
-    private val context: Context
-) : Interceptor {
-
+class AuthInterceptor(private val context: Context) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val original = chain.request()
+        val tokenManager = TokenManager.get(context)
+        val accessToken = tokenManager.getAccessToken()
 
-        val token = TokenManager.get(context).getAccessToken()
+        val requestBuilder = chain.request().newBuilder()
 
-        // If no token → proceed normally
-        if (token.isNullOrEmpty()) {
-            return chain.proceed(original)
+        if (!accessToken.isNullOrBlank()) {
+            requestBuilder.addHeader("Authorization", "Bearer $accessToken")
         }
 
-        // Add Authorization header
-        val newRequest = original.newBuilder()
-            .header("Authorization", "Bearer $token")
-            .build()
-
-        return chain.proceed(newRequest)
+        return chain.proceed(requestBuilder.build())
     }
 }

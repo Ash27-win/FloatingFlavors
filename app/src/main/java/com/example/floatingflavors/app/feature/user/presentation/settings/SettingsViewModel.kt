@@ -9,11 +9,10 @@ import com.example.floatingflavors.app.feature.user.data.settings.UserSettingsRe
 
 import kotlinx.coroutines.launch
 
-private const val TEMP_USER_ID = 1
-
 class SettingsViewModel(
+    application: android.app.Application,
     private val repository: UserSettingsRepository
-) : ViewModel() {
+) : androidx.lifecycle.AndroidViewModel(application) {
 
     // ✅ MAKE STATE OBSERVABLE
     var uiState by mutableStateOf<SettingsUiState>(SettingsUiState.Loading)
@@ -22,7 +21,8 @@ class SettingsViewModel(
     fun loadSettings() {
         viewModelScope.launch {
             try {
-                val response = repository.fetchSettings(TEMP_USER_ID)
+                val userId = com.example.floatingflavors.app.core.UserSession.userId
+                val response = repository.fetchSettings(userId)
                 uiState = SettingsUiState.Success(response)
             } catch (e: Exception) {
                 uiState = SettingsUiState.Error(e.message ?: "Something went wrong")
@@ -32,14 +32,16 @@ class SettingsViewModel(
 
     fun toggleNotification(enabled: Boolean) {
         viewModelScope.launch {
-            repository.toggleNotification(TEMP_USER_ID, enabled)
+            val userId = com.example.floatingflavors.app.core.UserSession.userId
+            repository.toggleNotification(userId, enabled)
             loadSettings()
         }
     }
 
     fun changeLanguage(language: String) {
         viewModelScope.launch {
-            repository.updateLanguage(TEMP_USER_ID, language)
+            val userId = com.example.floatingflavors.app.core.UserSession.userId
+            repository.updateLanguage(userId, language)
             loadSettings()
         }
     }
@@ -47,10 +49,19 @@ class SettingsViewModel(
     fun logout(onLogoutSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                repository.logout(TEMP_USER_ID)
+                val userId = com.example.floatingflavors.app.core.UserSession.userId
+                repository.logout(userId)
+                
+                // 🔥 CLEAR SESSION
+                com.example.floatingflavors.app.core.auth.TokenManager.get(getApplication()).clearTokens()
+                com.example.floatingflavors.app.core.UserSession.userId = 0
+                
                 onLogoutSuccess()
             } catch (e: Exception) {
-                // optional: handle error / toast later
+                // Force logout anyway on error
+                com.example.floatingflavors.app.core.auth.TokenManager.get(getApplication()).clearTokens()
+                com.example.floatingflavors.app.core.UserSession.userId = 0
+                onLogoutSuccess()
             }
         }
     }
@@ -58,7 +69,8 @@ class SettingsViewModel(
 
     fun deleteAccount() {
         viewModelScope.launch {
-            repository.deleteAccount(TEMP_USER_ID)
+            val userId = com.example.floatingflavors.app.core.UserSession.userId
+            repository.deleteAccount(userId)
         }
     }
 }

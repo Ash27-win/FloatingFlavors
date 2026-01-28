@@ -32,7 +32,7 @@ import com.example.floatingflavors.app.feature.user.presentation.membership.comp
 fun MembershipScreen(
     navController: NavController
 ) {
-    val userId = 1
+    val userId = com.example.floatingflavors.app.core.UserSession.userId
 
     val vm: MembershipViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
