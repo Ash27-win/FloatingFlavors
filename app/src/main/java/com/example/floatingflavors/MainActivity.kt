@@ -14,6 +14,7 @@ import org.osmdroid.config.Configuration as OsmConfiguration
 import android.content.Context
 import android.location.LocationManager
 import android.os.Bundle
+import androidx.annotation.RequiresApi
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService
 import com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryLocationUpdateService
 
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
         var pendingOrderIdForTracking: String? = null
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -111,6 +113,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FloatingFlavorsApp() {
     FloatingFlavorsTheme {
