@@ -166,18 +166,17 @@ fun AppNavHost(navController: NavHostController = rememberNavController(), start
                 onBackClick = { navController.popBackStack() },
                 onLoginClick = { role ->
                     when (role) {
-                        "Admin" -> navController.navigate(Screen.AdminRoot.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
-                        "User" -> navController.navigate(Screen.UserRoot.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
-                        "Delivery" -> navController.navigate(Screen.DeliveryRoot.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
+                        "Admin" -> navController.navigate(Screen.AdminRoot.route)
+                        "User" -> navController.navigate(Screen.UserRoot.route)
+                        "Delivery" -> navController.navigate(Screen.DeliveryRoot.route)
                     }
                 },
-                onNavigateToRegister = { navController.navigate(Screen.Register.route) }
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                },
+                onForgotPassword = {                      // ✅ THIS WAS MISSING
+                    navController.navigate(Screen.ForgotPassword.route)
+                }
             )
         }
 

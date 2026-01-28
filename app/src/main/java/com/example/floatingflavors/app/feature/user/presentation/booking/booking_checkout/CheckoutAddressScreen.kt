@@ -3,27 +3,14 @@ package com.example.floatingflavors.app.feature.user.presentation.booking.bookin
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -41,8 +28,10 @@ fun CheckoutAddressScreen(
     userId: Int,
     onBack: () -> Unit,
     onAddAddress: () -> Unit,
-    onContinue: (Int) -> Unit
+    onContinue: (Int) -> Unit   // ✅ parent expects selected addressId
 ) {
+
+    /* ---------------- LOAD ADDRESSES ---------------- */
     LaunchedEffect(Unit) {
         vm.load(userId)
     }
@@ -56,16 +45,16 @@ fun CheckoutAddressScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // 🔥 HEADER (THIS WAS MISSING)
+        /* ---------------- HEADER ---------------- */
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.Default.ArrowBack,
-                null,
+                contentDescription = null,
                 modifier = Modifier.clickable { onBack() }
             )
             Spacer(Modifier.weight(1f))
             Text(
-                "Select Delivery Address",
+                text = "Select Delivery Address",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -78,21 +67,24 @@ fun CheckoutAddressScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // ADDRESS LIST
+        /* ---------------- ADDRESS LIST ---------------- */
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             items(vm.addresses) { addr ->
                 CheckoutAddressCard(
                     address = addr,
-                    selected = vm.selectedAddressId == addr.id
-                ) {
-                    vm.select(userId, addr.id)
-                }
+                    selected = vm.selectedAddressId == addr.id,
+                    onClick = {
+                        // ✅ EXISTING LOGIC – DO NOT CHANGE
+                        vm.select(userId, addr.id)
+                    }
+                )
             }
 
-            // 🔥 ADD NEW ADDRESS (THIS WAS MISSING)
+            /* ---------------- ADD NEW ADDRESS ---------------- */
             item {
                 OutlinedButton(
                     onClick = onAddAddress,
@@ -105,7 +97,7 @@ fun CheckoutAddressScreen(
                         contentColor = CheckoutBlue
                     )
                 ) {
-                    Icon(Icons.Default.Add, null)
+                    Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Add New Address")
                 }
@@ -114,10 +106,14 @@ fun CheckoutAddressScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // PROCEED BUTTON
+        /* ---------------- CONTINUE BUTTON ---------------- */
         Button(
             onClick = {
-                vm.selectedAddressId?.let(onContinue)
+                // ✅ THIS IS THE KEY LINE
+                // Selected addressId parent-ku pass pannrom
+                vm.selectedAddressId?.let { selectedId ->
+                    onContinue(selectedId)
+                }
             },
             enabled = vm.selectedAddressId != null,
             modifier = Modifier
@@ -129,7 +125,7 @@ fun CheckoutAddressScreen(
             )
         ) {
             Text(
-                "Proceed to Order Summary →",
+                text = "Proceed to Order Summary →",
                 fontWeight = FontWeight.Bold
             )
         }
@@ -137,4 +133,3 @@ fun CheckoutAddressScreen(
         Spacer(Modifier.height(16.dp))
     }
 }
-

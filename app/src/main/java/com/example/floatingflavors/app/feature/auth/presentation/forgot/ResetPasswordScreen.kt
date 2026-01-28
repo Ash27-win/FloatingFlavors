@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -37,55 +36,30 @@ fun ResetPasswordScreen(
     var confirm by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(message) {
-        message?.let { snackbarHostState.showSnackbar(it) }
-    }
-
     val hasLength = password.length >= 8
     val hasSymbol = password.any { !it.isLetterOrDigit() }
-
     val strength = when {
-        password.isEmpty() -> 0
         !hasLength -> 1
         hasLength && !hasSymbol -> 2
         else -> 3
     }
 
-    val barColor by animateColorAsState(
-        when (strength) {
-            1 -> Color.Red
-            2 -> Color(0xFFFFA000)
-            3 -> Color(0xFF2ECC71)
-            else -> Color.LightGray
-        },
-        label = "strengthColor"
+    val fill by animateFloatAsState(strength / 3f, label = "fill")
+    val color by animateColorAsState(
+        if (strength == 3) Color(0xFF2ECC71) else Color(0xFFFFA000),
+        label = "color"
     )
-
-    val fill by animateFloatAsState(strength / 3f, label = "strengthFill")
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    listOf(Color(0xFFFFEFE3), Color.White)
-                )
-            )
+            .background(Brush.radialGradient(listOf(Color(0xFFFFEFE3), Color.White)))
+            .padding(20.dp)
     ) {
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
-        ) {
+        Column {
 
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, null)
-            }
-
-            Spacer(Modifier.height(24.dp))
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) }
 
             Text("Reset Password", fontSize = 26.sp, fontWeight = FontWeight.Bold)
 
@@ -102,11 +76,8 @@ fun ResetPasswordScreen(
                         modifier = Modifier.clickable { visible = !visible }
                     )
                 },
-                placeholder = { Text("New Password") },
                 visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !loading
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(12.dp))
@@ -121,22 +92,9 @@ fun ResetPasswordScreen(
                     modifier = Modifier
                         .fillMaxWidth(fill)
                         .height(6.dp)
-                        .background(barColor, RoundedCornerShape(50))
+                        .background(color, RoundedCornerShape(50))
                 )
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                when (strength) {
-                    1 -> "Weak password"
-                    2 -> "Medium password"
-                    3 -> "Strong password"
-                    else -> "Enter password"
-                },
-                color = barColor,
-                fontWeight = FontWeight.Bold
-            )
 
             Spacer(Modifier.height(16.dp))
 
@@ -145,42 +103,28 @@ fun ResetPasswordScreen(
                 onValueChange = { confirm = it },
                 placeholder = { Text("Confirm Password") },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !loading
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(24.dp))
 
             Button(
                 onClick = { onPasswordUpdated(password) },
-                enabled = strength == 3 && password == confirm && !loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                enabled = strength == 3 && password == confirm,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                contentPadding = PaddingValues()
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFFFF7A18), Color(0xFFFF3C3C))
-                            ),
+                            Brush.horizontalGradient(listOf(Color(0xFFFF7A18), Color(0xFFFF3C3C))),
                             RoundedCornerShape(50)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (loading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    } else {
-                        Text("Update Password →", color = Color.White, fontSize = 18.sp)
-                    }
+                    Text("Update Password →", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -189,15 +133,8 @@ fun ResetPasswordScreen(
             Text(
                 "Back to Login Screen",
                 color = Color(0xFFFF7A18),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .clickable { onLoginClick() }
+                modifier = Modifier.align(Alignment.CenterHorizontally).clickable { onLoginClick() }
             )
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
     }
 }

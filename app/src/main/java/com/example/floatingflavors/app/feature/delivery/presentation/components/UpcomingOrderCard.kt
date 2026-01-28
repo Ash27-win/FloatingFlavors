@@ -23,10 +23,15 @@ fun UpcomingOrderCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Border, RoundedCornerShape(16.dp))
-            .clickable { onClick() }   // 🔥 THIS WAS MISSING
+            .clickable { onClick() }
     ) {
         Column(Modifier.padding(16.dp)) {
 

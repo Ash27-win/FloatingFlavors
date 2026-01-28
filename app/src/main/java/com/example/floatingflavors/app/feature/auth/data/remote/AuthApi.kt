@@ -23,14 +23,14 @@ interface AuthApi {
         @Body body: LoginRequestDto
     ): LoginResponseDto
 
-    @POST("forgot_password.php")
+    @POST("api/forgot_password.php")
     suspend fun sendOtp(@Body request: ForgotPasswordRequest): ApiResponse
 
 
-    @POST("verify_otp.php")
+    @POST("api/verify_otp.php")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): ApiResponse
 
 
-    @POST("reset_password.php")
+    @POST("api/reset_password.php")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): ApiResponse
 }

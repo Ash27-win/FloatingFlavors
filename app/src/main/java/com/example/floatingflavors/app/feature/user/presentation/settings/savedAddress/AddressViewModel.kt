@@ -24,6 +24,7 @@ class AddressViewModel(
     }
 
     fun add(
+        context: android.content.Context,
         userId: Int,
         label: String,
         house: String,
@@ -32,10 +33,38 @@ class AddressViewModel(
         city: String,
         landmark: String?,
         onDone: () -> Unit
-    ) = viewModelScope.launch {
-        repo.add(userId, label, house, area, pincode, city, landmark)
-        refreshTrigger++
-        onDone()
+    ) = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        var lat = 0.0
+        var long = 0.0
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                // For Android 13+ (Tiramisu)
+                val geocoder = android.location.Geocoder(context)
+                 val addresses = geocoder.getFromLocationName("$house, $area, $city, $pincode", 1)
+                 if (!addresses.isNullOrEmpty()) {
+                     lat = addresses[0].latitude
+                     long = addresses[0].longitude
+                 }
+            } else {
+                // For older versions
+                @Suppress("DEPRECATION")
+                val geocoder = android.location.Geocoder(context)
+                val addresses = geocoder.getFromLocationName("$house, $area, $city, $pincode", 1)
+                if (!addresses.isNullOrEmpty()) {
+                    lat = addresses[0].latitude
+                    long = addresses[0].longitude
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        repo.add(userId, label, house, area, pincode, city, landmark, lat, long)
+        // Switch back to Main for UI updates if needed, though refreshTrigger is state
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            refreshTrigger++
+            onDone()
+        }
     }
 
     fun delete(addressId: Int, userId: Int) = viewModelScope.launch {

@@ -8,8 +8,9 @@ class AddressRepository(private val api: AddressApi) {
     suspend fun load(userId: Int) = api.getAddresses(userId)
     suspend fun add(
         userId: Int, label: String, house: String,
-        area: String, pincode: String, city: String, landmark: String?
-    ) = api.addAddress(userId,label,house,area,pincode,city,landmark)
+        area: String, pincode: String, city: String, landmark: String?,
+        latitude: Double, longitude: Double
+    ) = api.addAddress(userId, label, house, area, pincode, city, landmark, latitude, longitude)
 
     suspend fun updateAddress(req: EditAddressRequest): ApiResponse<Unit> =
         api.updateAddress(
@@ -21,7 +22,9 @@ class AddressRepository(private val api: AddressApi) {
             req.pincode,
             req.city,
             req.landmark,
-            req.is_default
+            req.is_default,
+            req.latitude,
+            req.longitude
         )
 
     suspend fun delete(id: Int) = api.deleteAddress(id)

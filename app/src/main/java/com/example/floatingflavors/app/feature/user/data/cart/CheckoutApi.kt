@@ -34,6 +34,7 @@ interface CheckoutApi {
     @POST("place_order.php")
     suspend fun placeOrder(
         @Field("user_id") userId: Int,
-        @Field("payment_method") payment: String
+        @Field("payment_method") payment: String,
+        @Field("user_address_id") addressId: Int
     ): Response<PlaceOrderResponse>
 }

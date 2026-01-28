@@ -24,7 +24,9 @@ interface AddressApi {
         @Field("area") area: String,
         @Field("pincode") pincode: String,
         @Field("city") city: String,
-        @Field("landmark") landmark: String?
+        @Field("landmark") landmark: String?,
+        @Field("latitude") latitude: Double,
+        @Field("longitude") longitude: Double
     ): ApiResponse<Unit>
 
     @FormUrlEncoded
@@ -38,7 +40,9 @@ interface AddressApi {
         @Field("pincode") pincode: String,
         @Field("city") city: String,
         @Field("landmark") landmark: String?,
-        @Field("is_default") isDefault: Int
+        @Field("is_default") isDefault: Int,
+        @Field("latitude") latitude: Double,
+        @Field("longitude") longitude: Double
     ): ApiResponse<Unit>
 
     @FormUrlEncoded

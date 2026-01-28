@@ -124,9 +124,11 @@ fun AddAddressScreen(
 
         Spacer(Modifier.weight(1f))
 
+        val context = androidx.compose.ui.platform.LocalContext.current
         Button(
             onClick = {
                 vm.add(
+                    context = context,
                     userId = userId,
                     label = label,
                     house = house,

@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryPermissionHandler
+import com.example.floatingflavors.app.core.navigation.Screen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,14 +36,23 @@ import com.example.floatingflavors.app.feature.delivery.presentation.tracking.De
 fun DeliveryOrderDetailsScreen(
     orderId: Int,
     deliveryPartnerId: Int,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToTracking: (Int) -> Unit
 ) {
+
     val context = LocalContext.current
     val activity = context as ComponentActivity
 
     val viewModel: DeliveryOrderDetailsViewModel = viewModel(
         factory = DeliveryOrderDetailsViewModelFactory(orderId, deliveryPartnerId)
     )
+
+    val acceptSuccess by viewModel.acceptSuccess.collectAsState()
+    LaunchedEffect(acceptSuccess) {
+        if (acceptSuccess) {
+            onNavigateToTracking(orderId)
+        }
+    }
 
     val order by viewModel.order.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -58,9 +69,40 @@ fun DeliveryOrderDetailsScreen(
 
     val data = order ?: return
 
+    // ✅ ON RESUME: Check GPS & Fetch Local Location (User request)
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                // If status is NOT yet OUT_FOR_DELIVERY, we want to preview current location
+                if (data.status != "OUT_FOR_DELIVERY") {
+                    viewModel.fetchDeviceLocation(context)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(data.status) {
+        if (data.status == "OUT_FOR_DELIVERY") {
+            viewModel.startObservingPickup(context)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                viewModel.resumeTrackingIfNeeded(context)
+            }
+        } else {
+             // Initial fetch (if permission already granted)
+             viewModel.fetchDeviceLocation(context)
+        }
+    }
+
+    // ✅ FIXED: Allow accepting if Unassigned OR Assigned to me
     val canAccept =
-        data.deliveryPartnerId == null &&
-                (data.status == "CONFIRMED" || data.status == "PREPARING")
+        data.status == "CONFIRMED" &&
+                (data.deliveryPartnerId == null || data.deliveryPartnerId == "null" || data.deliveryPartnerId.toIntOrNull() == deliveryPartnerId)
 
     Column(
         modifier = Modifier
@@ -71,6 +113,7 @@ fun DeliveryOrderDetailsScreen(
 
         /* ---------------- TOP BAR ---------------- */
         TopAppBar(
+            modifier = Modifier.windowInsetsPadding(WindowInsets(0)),
             title = { Text("Order Details", fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
@@ -84,15 +127,140 @@ fun DeliveryOrderDetailsScreen(
             }
         )
 
-        /* ---------------- MAP PREVIEW (STATIC) ---------------- */
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp)
-                .background(Color(0xFFE5E5E5))
-        )
+            /* ---------------- MAP INTEGRATION ---------------- */
+            
+            // Map takes priority at top
+            val liveAddress = pickupAddress
+            // Simple logic: parse Lat/Lng from pickupAddress string if it was just "Loc: x,y" 
+            // OR use a separate state for actual GeoPoint in ViewModel. 
+            // For now, let's assume ViewModel exposes 'liveGeoPoint'.
+            
+            // We need to fetch it from ViewModel states we added:
+            // val livePoint by viewModel.liveLocation... (We didn't add this yet, we relied on string)
+            // Let's assume we parse it or better yet, verify ViewModel has it.
+            // Wait, we updated ViewModel to fetch routes but we didn't expose the Live GeoPoint explicitly as StateFlow for the Map.
+            // Let's assume 'pickupAddress' might contain coords or we rely on 'LastKnown' logic.
+            
+            // FIXME: Ideally ViewModel should expose 'currentGeoPoint'. 
+            // Since we are in the middle of editing, let's use a PLACEHOLDER approach for the Screen 
+            // and I will fix ViewModel right after to expose 'currentLocationVal'.
+            
+            val routes by viewModel.availableRoutes.collectAsState()
+            val selectedIndex by viewModel.selectedRouteIndex.collectAsState()
+            val isNavigating by viewModel.isNavigationStarted.collectAsState()
+            val liveGeoPoint by viewModel.currentGeoPoint.collectAsState() // 🔥 REAL DATA
+            val bearing by viewModel.currentBearing.collectAsState() // 🔥 BEARING
+            val isMuted by viewModel.isMuted.collectAsState()
+            val instruction by viewModel.currentInstruction.collectAsState() // 🔥 REAL INSTRUCTION
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp) // Large Map Area
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFFE5E5E5))
+            ) {
 
-        Column(Modifier.padding(16.dp)) {
+                DeliveryTrackingMap(
+                   livePoint = liveGeoPoint,
+                   destination = viewModel.destinationPoint.collectAsState().value,
+                   routes = routes.map { it.points },
+                   selectedRouteIndex = selectedIndex,
+                   isNavigationStarted = isNavigating,
+                   bearing = bearing,
+                   compassBearing = 0f, // Not needed in overview
+                   modifier = Modifier.fillMaxSize()
+                )
+                
+                // OVERLAYS
+                if (!isNavigating && routes.isNotEmpty()) {
+                    // ROUTE SELECTOR
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .background(Color.White.copy(alpha = 0.9f))
+                            .padding(16.dp)
+                    ) {
+                        Text("Select Route", fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            routes.forEachIndexed { index, route ->
+                                FilterChip(
+                                    selected = selectedIndex == index,
+                                    onClick = { viewModel.selectRoute(index) },
+                                    label = { 
+                                        Column {
+                                            Text(route.description, fontWeight = FontWeight.Bold)
+                                            Text("${route.durationMin} min (${route.distanceMeters / 1000} km)", fontSize = 10.sp)
+                                        }
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFE6F7EC),
+                                        selectedLabelColor = Color(0xFF16A34A)
+                                    )
+                                )
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(12.dp))
+                        
+                        Button(
+                            onClick = { viewModel.toggleNavigation(true) },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(Color(0xFF2E63F5))
+                        ) {
+                            Icon(Icons.Default.Navigation, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Start Navigation")
+                        }
+                    }
+                }
+                
+                if (isNavigating) {
+                    // NAVIGATION BAR
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF222222),
+                        shadowElevation = 8.dp
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.TurnRight, null, tint = Color.White, modifier = Modifier.size(32.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Next Turn", color = Color.Gray, fontSize = 12.sp)
+                                Text(
+                                    text = instruction ?: "Calculating...", // 🔥 DYNAMIC TEXT
+                                    color = Color.White, 
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 2
+                                )
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            
+                            // MUTE BUTTON
+                            IconButton(onClick = { viewModel.toggleMute() }) {
+                                Icon(
+                                    if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp, 
+                                    null, 
+                                    tint = Color.White
+                                )
+                            }
+                            
+                            IconButton(onClick = { viewModel.toggleNavigation(false) }) {
+                                Icon(Icons.Default.Close, null, tint = Color.Red)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Column(Modifier.padding(16.dp)) {
 
             /* ---------------- ORDER HEADER ---------------- */
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -121,7 +289,7 @@ fun DeliveryOrderDetailsScreen(
             Row {
                 InfoChip(Icons.Default.Payments, "Online Payment")
                 Spacer(Modifier.width(8.dp))
-                InfoChip(Icons.Default.Schedule, "Est. 25 mins")
+                InfoChip(Icons.Default.Schedule, "Est. ${routes.getOrNull(selectedIndex)?.durationMin ?: 25} mins")
             }
 
             Spacer(Modifier.height(16.dp))
@@ -129,12 +297,17 @@ fun DeliveryOrderDetailsScreen(
             /* ---------------- PICKUP / DROP CARD ---------------- */
             Card(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 8.dp
+                ),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
             ) {
                 Column(Modifier.padding(16.dp)) {
 
                     LocationItem(
-                        iconBg = Color(0xFFFFEDD5),
+                        iconBg = Color(0xFFFFF1E6),
                         icon = Icons.Default.Store,
                         title = "PICKUP",
                         name = "Floating Flavors Hub A",
@@ -142,10 +315,10 @@ fun DeliveryOrderDetailsScreen(
                         extra = "1.2 mi away"
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(18.dp))
 
                     LocationItem(
-                        iconBg = Color(0xFFFEE2E2),
+                        iconBg = Color(0xFFFFEBEE),
                         icon = Icons.Default.LocationOn,
                         title = "DROP-OFF",
                         name = "Home",
@@ -154,6 +327,8 @@ fun DeliveryOrderDetailsScreen(
                     )
                 }
             }
+            
+            } // End Column padding
 
             Spacer(Modifier.height(16.dp))
 
@@ -188,10 +363,18 @@ fun DeliveryOrderDetailsScreen(
                             .size(40.dp)
                             .border(1.dp, Color(0xFFEA580C), CircleShape),
                         onClick = {
-                            data.customerPhone?.let {
+                            val phone = data.customerPhone
+
+                            if (!phone.isNullOrBlank()) {
                                 context.startActivity(
-                                    Intent(Intent.ACTION_DIAL, Uri.parse("tel:$it"))
+                                    Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
                                 )
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Customer phone number not available",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     ) {
@@ -205,7 +388,7 @@ fun DeliveryOrderDetailsScreen(
             /* ---------------- ACTION BUTTONS ---------------- */
             if (canAccept) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), // Added padding here
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
@@ -251,7 +434,6 @@ fun DeliveryOrderDetailsScreen(
                     }
                 }
             }
-        }
     }
 }
 

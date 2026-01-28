@@ -79,6 +79,7 @@ fun EditAddressScreen(
 
         /* ---------- FIXED BOTTOM BUTTON ---------- */
         bottomBar = {
+            val context = androidx.compose.ui.platform.LocalContext.current
             Button(
                 onClick = {
                     when {
@@ -89,6 +90,7 @@ fun EditAddressScreen(
                         city.isBlank() -> errorMessage = "City is required"
                         else -> {
                             vm.updateAddress(
+                                context,
                                 EditAddressRequest(
                                     address_id = address.id,
                                     user_id = userId,

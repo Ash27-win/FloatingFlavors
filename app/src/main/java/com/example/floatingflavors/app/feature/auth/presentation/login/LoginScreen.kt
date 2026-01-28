@@ -27,6 +27,7 @@ fun LoginScreen(
     onBackClick: () -> Unit,
     onLoginClick: (role: String) -> Unit,
     onNavigateToRegister: () -> Unit,
+    onForgotPassword: () -> Unit,
     authViewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
@@ -180,7 +181,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    TextButton(onClick = { /* TODO: forgot password */ }) {
+                    TextButton(onClick = onForgotPassword) {
                         Text("Forgot Password?")
                     }
                 }

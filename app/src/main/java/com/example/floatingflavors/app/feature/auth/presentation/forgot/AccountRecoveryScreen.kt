@@ -34,7 +34,6 @@ fun AccountRecoveryScreen(
 ) {
     var email by remember { mutableStateOf("") }
     val tilt by animateFloatAsState(-8f, label = "tilt")
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -45,17 +44,12 @@ fun AccountRecoveryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.radialGradient(
-                    listOf(Color(0xFFFFEFE3), Color.White)
-                )
+                Brush.radialGradient(listOf(Color(0xFFFFEFE3), Color.White))
             )
+            .padding(20.dp)
     ) {
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
             IconButton(onClick = onBack) {
                 Surface(shape = CircleShape, color = Color.White) {
@@ -78,8 +72,7 @@ fun AccountRecoveryScreen(
             Surface(
                 shape = RoundedCornerShape(32.dp),
                 color = Color.White,
-                shadowElevation = 12.dp,
-                modifier = Modifier.fillMaxWidth()
+                shadowElevation = 12.dp
             ) {
                 Column(
                     modifier = Modifier.padding(28.dp),
@@ -93,12 +86,7 @@ fun AccountRecoveryScreen(
                             .background(Color(0xFFFFE0CC), RoundedCornerShape(24.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.Email,
-                            null,
-                            tint = Color(0xFFFF7A18),
-                            modifier = Modifier.size(40.dp)
-                        )
+                        Icon(Icons.Default.Email, null, tint = Color(0xFFFF7A18), modifier = Modifier.size(40.dp))
                         Icon(
                             Icons.Default.Security,
                             null,
@@ -123,16 +111,6 @@ fun AccountRecoveryScreen(
 
                     Spacer(Modifier.height(28.dp))
 
-                    Text(
-                        "EMAIL ADDRESS",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-
-                    Spacer(Modifier.height(6.dp))
-
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -140,8 +118,7 @@ fun AccountRecoveryScreen(
                         placeholder = { Text("name@example.com") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         shape = RoundedCornerShape(50),
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !loading
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(Modifier.height(24.dp))
@@ -167,20 +144,12 @@ fun AccountRecoveryScreen(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (loading) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    strokeWidth = 2.dp,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            } else {
-                                Text(
-                                    "Send OTP →",
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                            Text(
+                                "Send OTP →",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -199,9 +168,6 @@ fun AccountRecoveryScreen(
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
 }

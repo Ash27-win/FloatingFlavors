@@ -20,6 +20,10 @@ import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
 
 @Composable
 fun MenuCard(item: MenuItemDto) {
+
+    // ✅ SAFELY PICK IMAGE
+    val imageUrl = item.image_full ?: item.image_url
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -27,18 +31,30 @@ fun MenuCard(item: MenuItemDto) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row {
+
             AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.name,
+                model = imageUrl,
+                contentDescription = item.name ?: "Menu Image",
                 modifier = Modifier
                     .size(90.dp)
                     .clip(RoundedCornerShape(8.dp))
             )
 
             Column(modifier = Modifier.padding(8.dp)) {
-                Text(item.name, fontWeight = FontWeight.Bold)
-                Text(item.description, maxLines = 2)
-                Text("₹${item.price}", color = Color(0xFF00B14F))
+                Text(
+                    text = item.name ?: "",
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = item.description ?: "",
+                    maxLines = 2
+                )
+
+                Text(
+                    text = "₹${item.price ?: "0"}",
+                    color = Color(0xFF00B14F)
+                )
             }
         }
     }

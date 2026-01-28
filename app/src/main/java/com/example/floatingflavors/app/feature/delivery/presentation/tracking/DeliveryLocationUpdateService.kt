@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.IBinder
@@ -17,6 +16,7 @@ import com.example.floatingflavors.app.core.network.NetworkClient
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 private const val CHANNEL_ID = "delivery_tracking"
 private const val NOTIFICATION_ID = 101
@@ -24,34 +24,36 @@ private const val NOTIFICATION_ID = 101
 class DeliveryLocationUpdateService : Service() {
 
     private lateinit var fusedClient: FusedLocationProviderClient
-    private lateinit var callback: LocationCallback
+    private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
+
     private var wakeLock: PowerManager.WakeLock? = null
 
-    // ✅ ADD HERE
-    private var lastLat = 0.0
-    private var lastLng = 0.0
+    private var lastLat: Double? = null
+    private var lastLng: Double? = null
 
-    private var deliveryPartnerId: Int = -1
+    private var deliveryPartnerId = 0
+    private var orderId = -1
+    private var isTracking = false
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var orderId: Int = -1
-    private var isTracking = false
 
     override fun onCreate() {
         super.onCreate()
         Log.d("DELIVERY_GPS", "📍 Service CREATED")
-        fusedClient = LocationServices.getFusedLocationProviderClient(this)
-        setupLocationRequest()
-    }
 
-    private fun setupLocationRequest() {
+        fusedClient = LocationServices.getFusedLocationProviderClient(this)
+
         locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            TimeUnit.SECONDS.toMillis(10)
+            2000 // 2 seconds
         )
-            .setMinUpdateIntervalMillis(TimeUnit.SECONDS.toMillis(5))
+            .setMinUpdateIntervalMillis(1000)
+            .setMinUpdateDistanceMeters(0f) // 🔥 Report ALL movements, even small ones
+            .setWaitForAccurateLocation(false)
             .build()
+
+        createNotificationChannel()
     }
 
     private fun isLocationEnabled(): Boolean {
@@ -66,34 +68,31 @@ class DeliveryLocationUpdateService : Service() {
 
             "START_TRACKING" -> {
                 orderId = intent.getIntExtra("ORDER_ID", -1)
-                deliveryPartnerId = intent.getIntExtra("DELIVERY_PARTNER_ID", -1)
+                deliveryPartnerId =
+                    intent.getIntExtra("DELIVERY_PARTNER_ID", 0)
 
                 if (orderId == -1) {
+                    Log.e("DELIVERY_GPS", "❌ orderId missing")
                     stopSelf()
                     return START_NOT_STICKY
                 }
 
                 if (!isLocationEnabled()) {
-                    openGpsNotification()
+                    showEnableGpsNotification()
                     stopSelf()
                     return START_NOT_STICKY
                 }
 
-                if (deliveryPartnerId == -1) {
-                    Log.e("DELIVERY_GPS", "❌ deliveryPartnerId missing")
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
+                requestIgnoreBatteryOptimizations()
 
-                // ✅ FIX: SET FLAG FIRST
                 isTracking = true
-
                 startForeground(NOTIFICATION_ID, buildNotification())
                 acquireWakeLock()
                 startLocationUpdates()
             }
 
             "STOP_TRACKING" -> {
+                stopLocationUpdates()
                 stopSelf()
             }
         }
@@ -101,7 +100,7 @@ class DeliveryLocationUpdateService : Service() {
         return START_STICKY
     }
 
-    private fun buildNotification(): Notification {
+    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
@@ -111,16 +110,19 @@ class DeliveryLocationUpdateService : Service() {
             getSystemService(NotificationManager::class.java)
                 .createNotificationChannel(channel)
         }
+    }
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(): Notification =
+        NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("🚚 Delivery Tracking Active")
             .setContentText("Order #$orderId • Live GPS")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setOngoing(true)
             .build()
-    }
 
     private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+
         val pm = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
@@ -128,7 +130,29 @@ class DeliveryLocationUpdateService : Service() {
         ).apply { acquire() }
     }
 
-    private fun openGpsNotification() {
+    private fun releaseWakeLock() {
+        if (wakeLock?.isHeld == true) {
+            wakeLock?.release()
+        }
+        wakeLock = null
+    }
+
+    private fun requestIgnoreBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val pm = getSystemService(POWER_SERVICE) as PowerManager
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                val intent = Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                ).apply {
+                    data = android.net.Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            }
+        }
+    }
+
+    private fun showEnableGpsNotification() {
         val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
@@ -149,38 +173,42 @@ class DeliveryLocationUpdateService : Service() {
     private fun startLocationUpdates() {
         if (!isTracking) return
 
-        callback = object : LocationCallback() {
+        locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 val loc = result.lastLocation ?: return
 
-                // ✅ FILTER SMALL GPS NOISE
-                if (kotlin.math.abs(loc.latitude - lastLat) < 0.00005 &&
-                    kotlin.math.abs(loc.longitude - lastLng) < 0.00005) {
-
-                    Log.d("DELIVERY_GPS", "⏭️ Ignored tiny movement")
-                    return
+                // 🔇 Filter GPS noise
+                if (lastLat != null && lastLng != null) {
+                    if (
+                        abs(loc.latitude - lastLat!!) < 0.00005 &&
+                        abs(loc.longitude - lastLng!!) < 0.00005
+                    ) return
                 }
 
-                // ✅ UPDATE LAST SENT LOCATION
                 lastLat = loc.latitude
                 lastLng = loc.longitude
 
                 Log.d(
                     "DELIVERY_GPS",
-                    "📍 Sending ${loc.latitude}, ${loc.longitude}"
+                    "📍 LAT=${loc.latitude}, LNG=${loc.longitude}"
                 )
 
                 scope.launch {
                     try {
+                        // Priority 1: Instant UI Update (Global Stream)
+                        DeliveryLocationStream.updateLocation(
+                            loc.latitude,
+                            loc.longitude,
+                            loc.bearing // 🔥 Send bearing
+                        )
+
+                        // Priority 2: Backend Sync
                         NetworkClient.deliveryLocationApi.updateLocation(
                             orderId = orderId,
                             lat = loc.latitude,
                             lng = loc.longitude,
                             deliveryPartnerId = deliveryPartnerId
                         )
-
-                        Log.d("DELIVERY_GPS", "✅ Location sent to server")
-
                     } catch (e: Exception) {
                         Log.e("DELIVERY_GPS", "❌ API error", e)
                     }
@@ -190,19 +218,20 @@ class DeliveryLocationUpdateService : Service() {
 
         fusedClient.requestLocationUpdates(
             locationRequest,
-            callback,
+            locationCallback,
             mainLooper
         )
     }
 
-    override fun onDestroy() {
+    private fun stopLocationUpdates() {
         try {
-            if (::callback.isInitialized) {
-                fusedClient.removeLocationUpdates(callback)
-            }
-            wakeLock?.release()
+            fusedClient.removeLocationUpdates(locationCallback)
         } catch (_: Exception) {}
+    }
 
+    override fun onDestroy() {
+        stopLocationUpdates()
+        releaseWakeLock()
         scope.cancel()
         isTracking = false
         Log.d("DELIVERY_GPS", "🛑 Service DESTROYED")

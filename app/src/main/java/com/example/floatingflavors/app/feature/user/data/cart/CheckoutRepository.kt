@@ -6,6 +6,6 @@ class CheckoutRepository {
     private val api = NetworkClient.checkoutApi
 
     suspend fun getSummary(userId: Int) = api.getSummary(userId)
-    suspend fun placeOrder(userId: Int, payment: String) =
-        api.placeOrder(userId, payment)
+    suspend fun placeOrder(userId: Int, payment: String, addressId: Int) =
+        api.placeOrder(userId, payment, addressId)
 }

@@ -17,20 +17,54 @@ class EditAddressViewModel(
         private set
 
     fun updateAddress(
+        context: android.content.Context,
         req: EditAddressRequest,
         onSuccess: () -> Unit
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            var lat = req.latitude
+            var long = req.longitude
+            
+            // Try to geocode only if address fields changed or lat/long is 0
+            // For simplicity, we can just re-geocode always on update to ensure accuracy
             try {
-                val res = repo.updateAddress(req)
-                if (res.status) {
-                    snackbarMessage = "Address updated successfully"
-                    onSuccess()
+                val addressString = "${req.house}, ${req.area}, ${req.city}, ${req.pincode}"
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                     val geocoder = android.location.Geocoder(context)
+                     val addresses = geocoder.getFromLocationName(addressString, 1)
+                     if (!addresses.isNullOrEmpty()) {
+                         lat = addresses[0].latitude
+                         long = addresses[0].longitude
+                     }
                 } else {
-                    snackbarMessage = res.message
+                    @Suppress("DEPRECATION")
+                    val geocoder = android.location.Geocoder(context)
+                    val addresses = geocoder.getFromLocationName(addressString, 1)
+                    if (!addresses.isNullOrEmpty()) {
+                        lat = addresses[0].latitude
+                        long = addresses[0].longitude
+                    }
                 }
             } catch (e: Exception) {
-                snackbarMessage = e.message ?: "Something went wrong"
+                e.printStackTrace()
+            }
+
+            val finalReq = req.copy(latitude = lat, longitude = long)
+
+            try {
+                val res = repo.updateAddress(finalReq)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    if (res.status) {
+                        snackbarMessage = "Address updated successfully"
+                        onSuccess()
+                    } else {
+                        snackbarMessage = res.message
+                    }
+                }
+            } catch (e: Exception) {
+                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    snackbarMessage = e.message ?: "Something went wrong"
+                 }
             }
         }
     }

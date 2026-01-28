@@ -9,6 +9,8 @@ data class EditAddressRequest(
     val pincode: String,
     val city: String,
     val landmark: String?,
-    val is_default: Int
+    val is_default: Int,
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0
 )
 

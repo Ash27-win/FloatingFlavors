@@ -3,16 +3,18 @@ package com.example.floatingflavors.app.feature.delivery.data
 import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryApi
 import com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryDashboardResponse
-import com.example.floatingflavors.app.feature.delivery.data.remote.LiveLocationData
+import com.example.floatingflavors.app.feature.delivery.data.remote.LiveLocationData as RemoteLiveLocationData
 import com.example.floatingflavors.app.feature.delivery.data.remote.OrderTrackingResponse
 import com.example.floatingflavors.app.feature.delivery.data.remote.SimpleResponseDto
 
 class DeliveryRepository(
     private val api: DeliveryApi = NetworkClient.retrofit.create(DeliveryApi::class.java)
 ) {
-    // ✅ Get order details (reuses existing get_order_detail.php)
-    suspend fun getOrderDetails(orderId: Int): DeliveryOrderDetailsResponse {
-        return try {
+
+    /* ---------------- ORDER DETAILS ---------------- */
+
+    suspend fun getOrderDetails(orderId: Int): DeliveryOrderDetailsResponse =
+        try {
             api.getOrderDetails(orderId)
         } catch (e: Exception) {
             DeliveryOrderDetailsResponse(
@@ -21,127 +23,65 @@ class DeliveryRepository(
                 data = null
             )
         }
-    }
 
-    // ✅ Accept order (reuses existing update_order_status.php)
-    suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto {
-        return try {
-            api.updateOrderStatus(
-                orderId = orderId,
-                status = "OUT_FOR_DELIVERY",
-                deliveryPartnerId = deliveryPartnerId
-            )
-        } catch (e: Exception) {
-            SimpleResponseDto(
-                success = false,
-                message = "Failed to accept order: ${e.message}"
-            )
-        }
-    }
+    /* ---------------- ORDER ACTIONS ---------------- */
 
-    // ✅ Reject order (reuses existing update_order_status.php)
-    suspend fun rejectOrder(orderId: Int): SimpleResponseDto {
-        return try {
-            api.updateOrderStatus(
-                orderId = orderId,
-                status = "REJECTED"
-            )
-        } catch (e: Exception) {
-            SimpleResponseDto(
-                success = false,
-                message = "Failed to reject order: ${e.message}"
-            )
-        }
-    }
+    suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto =
+        api.updateOrderStatus(
+            orderId = orderId,
+            status = "OUT_FOR_DELIVERY",
+            deliveryPartnerId = deliveryPartnerId
+        )
 
-    // ✅ Mark as delivered (reuses existing update_order_status.php)
-    suspend fun markAsDelivered(orderId: Int): SimpleResponseDto {
-        return try {
-            api.updateOrderStatus(
-                orderId = orderId,
-                status = "COMPLETED"
-            )
-        } catch (e: Exception) {
-            SimpleResponseDto(
-                success = false,
-                message = "Failed to mark as delivered: ${e.message}"
-            )
-        }
-    }
+    suspend fun rejectOrder(orderId: Int): SimpleResponseDto =
+        api.updateOrderStatus(
+            orderId = orderId,
+            status = "REJECTED"
+        )
 
-    // ✅ Update live location (reuses existing update_order_location.php)
+    suspend fun markAsDelivered(orderId: Int): SimpleResponseDto =
+        api.updateOrderStatus(
+            orderId = orderId,
+            status = "COMPLETED"
+        )
+
+    /* ---------------- LIVE LOCATION ---------------- */
+
     suspend fun updateLiveLocation(
         orderId: Int,
         lat: Double,
         lng: Double,
         deliveryPartnerId: Int
-    ): SimpleResponseDto {
-        return try {
-            api.updateLiveLocation(
-                orderId = orderId,
-                lat = lat,
-                lng = lng,
-                deliveryPartnerId = deliveryPartnerId
-            )
-        } catch (e: Exception) {
-            SimpleResponseDto(
-                success = false,
-                message = "Failed to update location: ${e.message}"
-            )
-        }
-    }
+    ): SimpleResponseDto =
+        api.updateLiveLocation(orderId, lat, lng, deliveryPartnerId)
 
-    suspend fun getLastLiveLocation(orderId: Int): LiveLocationData? {
-        return try {
+    /**
+     * ✅ DOMAIN SAFE LOCATION (NO EXTENSIONS)
+     */
+    suspend fun getLastLiveLocation(orderId: Int): LiveLocationData? =
+        try {
             val res = api.getLiveLocation(orderId)
-            if (res.success) res.location else null
+            val remote: RemoteLiveLocationData? = res.location as RemoteLiveLocationData?
+            if (res.success && remote != null) {
+                LiveLocationData(
+                    latitude = remote.latitude,
+                    longitude = remote.longitude
+                )
+            } else null
         } catch (e: Exception) {
             null
         }
-    }
 
+    suspend fun getLiveLocation(orderId: Int): LiveLocationResponse =
+        api.getLiveLocation(orderId)
 
-    // ✅ Get live location (reuses existing get_order_location.php)
-    suspend fun getLiveLocation(orderId: Int): LiveLocationResponse {
-        return try {
-            api.getLiveLocation(orderId)
-        } catch (e: Exception) {
-            LiveLocationResponse(
-                success = false,
-                message = "Failed to get location: ${e.message}",
-                location = null
-            )
-        }
-    }
+    /* ---------------- DASHBOARD ---------------- */
 
-    // ✅ Get order tracking (reuses existing order_tracking_details.php)
-    suspend fun getOrderTracking(orderId: Int): OrderTrackingResponse {
-        return try {
-            api.getOrderTracking(orderId, "INDIVIDUAL")
-        } catch (e: Exception) {
-            OrderTrackingResponse(
-                success = false,
-                message = "Failed to get tracking: ${e.message}",
-                currentStatus = null,
-                deliveryLocation = null,
-                deliveryPerson = null,
-                deliveryAddress = null
-            )
-        }
-    }
+    suspend fun getDashboard(deliveryPartnerId: Int): DeliveryDashboardResponse =
+        api.getDashboard(deliveryPartnerId)
 
-    // ✅ Get dashboard (uses delivery_dashboard.php)
-    suspend fun getDashboard(deliveryPartnerId: Int): DeliveryDashboardResponse {
-        return try {
-            api.getDashboard(deliveryPartnerId)
-        } catch (e: Exception) {
-            DeliveryDashboardResponse(
-                success = false,
-                message = "Failed to get dashboard: ${e.message}",
-                deliveryPartnerName = null,
-                activeOrder = null,
-                upcomingOrders = null
-            )
-        }
-    }
+    /* ---------------- TRACKING ---------------- */
+
+    suspend fun getOrderTracking(orderId: Int): OrderTrackingResponse =
+        api.getOrderTracking(orderId, "INDIVIDUAL")
 }

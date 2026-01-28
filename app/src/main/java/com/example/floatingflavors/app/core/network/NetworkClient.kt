@@ -5,6 +5,7 @@ import com.example.floatingflavors.app.chatbot.ChatApi
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminSettingsApi
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.data.AdminLocationApi
 import com.example.floatingflavors.app.feature.auth.data.remote.AuthApi
+import com.example.floatingflavors.app.feature.delivery.data.DeliveryTrackingApi
 import com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryApi
 import com.example.floatingflavors.app.feature.delivery.presentation.tracking.data.DeliveryLocationApi
 import com.example.floatingflavors.app.feature.menu.data.remote.MenuApi // NEW
@@ -30,8 +31,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
-//    const val BASE_URL = "http://10.198.130.250/floating_flavors_api/"  //APPA WIFI
-    const val BASE_URL = "http://172.20.10.3/floating_flavors_api/"
+    const val BASE_URL = "http://10.111.48.250/floating_flavors_api/"  //APPA WIFI
+//    const val BASE_URL = "http://10.56.232.250/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
     const val CHATBOT_BASE_URL = "http://10.198.130.250:8000/"
@@ -132,6 +133,10 @@ object NetworkClient {
     // In NetworkClient.kt, add:
     val deliveryLocationApi: DeliveryLocationApi by lazy {
         retrofit.create(DeliveryLocationApi::class.java)
+    }
+
+    val deliveryTrackingApi: DeliveryTrackingApi by lazy {
+        retrofit.create(DeliveryTrackingApi::class.java)
     }
 
     // Delivery concept

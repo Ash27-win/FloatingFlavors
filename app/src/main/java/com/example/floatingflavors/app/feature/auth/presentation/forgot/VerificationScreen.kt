@@ -1,8 +1,8 @@
 package com.example.floatingflavors.app.feature.auth.presentation.forgot
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,8 +16,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -34,8 +39,15 @@ fun VerificationScreen(
     onVerify: (String) -> Unit,
     onResend: () -> Unit
 ) {
-    var otp by remember { mutableStateOf(List(6) { "" }) }
+    val otpLength = 6
+    var otp by remember { mutableStateOf(List(otpLength) { "" }) }
+    val focusRequesters = remember { List(otpLength) { FocusRequester() } }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // 👇 Auto focus first box
+    LaunchedEffect(Unit) {
+        focusRequesters.first().requestFocus()
+    }
 
     LaunchedEffect(message) {
         message?.let { snackbarHostState.showSnackbar(it) }
@@ -46,28 +58,33 @@ fun VerificationScreen(
             .fillMaxSize()
             .background(
                 Brush.radialGradient(
-                    listOf(Color(0xFFFFEFE3), Color.White)
+                    listOf(Color(0xFFFFF1E6), Color.White)
                 )
             )
+            .padding(20.dp)
     ) {
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
-            IconButton(onClick = onBack) {
-                Surface(shape = CircleShape, color = Color.White) {
-                    Icon(Icons.Default.ArrowBack, null, modifier = Modifier.padding(8.dp))
+            // Header
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, null)
                 }
+                Text(
+                    "Verification",
+                    modifier = Modifier.align(Alignment.Center),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Spacer(Modifier.height(24.dp))
 
+            // Card
             Surface(
                 shape = RoundedCornerShape(32.dp),
-                color = Color.White,
+                color = Color(0xFFFFF8F3),
                 shadowElevation = 12.dp
             ) {
                 Column(
@@ -86,41 +103,78 @@ fun VerificationScreen(
 
                     Text("Verify Identity", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
 
                     Text(
-                        "Enter the 6-digit code sent to\n$emailMasked",
-                        textAlign = TextAlign.Center,
-                        color = Color.Gray
+                        "Enter the 6-digit code sent to your email",
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text(
+                        emailMasked,
+                        color = Color(0xFFFF7A18),
+                        fontWeight = FontWeight.Bold
                     )
 
                     Spacer(Modifier.height(24.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // OTP INPUT
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
                         otp.forEachIndexed { index, value ->
                             Box(
                                 modifier = Modifier
-                                    .size(52.dp)
+                                    .size(46.dp)
                                     .border(
                                         2.dp,
-                                        if (value.isNotEmpty()) Color(0xFFFF7A18) else Color.LightGray,
+                                        if (value.isNotEmpty())
+                                            Color(0xFFFF7A18)
+                                        else
+                                            Color(0xFFE0E0E0),
                                         CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 BasicTextField(
                                     value = value,
-                                    onValueChange = {
-                                        if (it.length <= 1 && it.all(Char::isDigit)) {
-                                            otp = otp.toMutableList().also { list ->
-                                                list[index] = it
+                                    onValueChange = { input ->
+                                        when {
+                                            // 👇 Paste full OTP
+                                            input.length == otpLength && input.all(Char::isDigit) -> {
+                                                otp = input.map { it.toString() }
+                                            }
+
+                                            input.length <= 1 && input.all(Char::isDigit) -> {
+                                                otp = otp.toMutableList().also {
+                                                    it[index] = input
+                                                }
+                                                if (input.isNotEmpty() && index < otpLength - 1) {
+                                                    focusRequesters[index + 1].requestFocus()
+                                                }
                                             }
                                         }
                                     },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier
+                                        .focusRequester(focusRequesters[index])
+                                        .onKeyEvent { event ->
+                                            val isBackspace = event.key == Key.Backspace
+                                            val isKeyDown = event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
+                                            if (isBackspace && isKeyDown && value.isEmpty() && index > 0) {
+                                                focusRequesters[index - 1].requestFocus()
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        },
                                     singleLine = true,
                                     textStyle = LocalTextStyle.current.copy(
-                                        fontSize = 20.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.Center
                                     )
@@ -131,9 +185,10 @@ fun VerificationScreen(
 
                     Spacer(Modifier.height(20.dp))
 
+                    // Timer
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = Color(0xFFFFF3EA)
+                        color = Color(0xFFFFEFE3)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -151,39 +206,50 @@ fun VerificationScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    val resendColor by animateColorAsState(
-                        if (seconds == 0) Color(0xFFFF7A18) else Color.Gray,
-                        label = "resend"
-                    )
-
-                    TextButton(
-                        enabled = seconds == 0 && !loading,
-                        onClick = onResend
-                    ) {
-                        Text("Resend", color = resendColor)
+                    Row {
+                        Text("Didn't receive code? ")
+                        Text(
+                            "Resend",
+                            color = if (seconds == 0) Color(0xFFFF7A18) else Color.LightGray,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable(enabled = seconds == 0) {
+                                onResend()
+                            }
+                        )
                     }
                 }
             }
 
             Spacer(Modifier.weight(1f))
 
+            // Verify button
             Button(
                 onClick = { onVerify(otp.joinToString("")) },
                 enabled = otp.all { it.isNotEmpty() } && !loading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(58.dp),
                 shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF7A18))
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                contentPadding = PaddingValues()
             ) {
-                if (loading) {
-                    CircularProgressIndicator(
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFFFF7A18), Color(0xFFFF9A3C))
+                            ),
+                            RoundedCornerShape(50)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Verify & Proceed →",
                         color = Color.White,
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(22.dp)
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
                     )
-                } else {
-                    Text("Verify & Proceed →", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
