@@ -25,53 +25,71 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
 
     fun checkAutoLogin() {
         viewModelScope.launch {
-            // Artificial delay for branding (optional, but requested implicitly by existing delay)
+            // Artificial delay for branding
             delay(1500)
 
             val tm = TokenManager.get(getApplication())
             
-            // Check Remember Me
-            if (!tm.getRememberMe()) {
+            // 1. Check "Remember Me"
+            val isRemember = tm.getRememberMe()
+            android.util.Log.d("SPLASH", "RememberMe: $isRemember")
+            
+            if (!isRemember) {
                 tm.clearTokens()
                 splashEvent = SplashEvent.NavigateToLogin
                 return@launch
             }
 
+            // 2. Check Token Existence
             val token = tm.getAccessToken()
+            val savedRole = tm.getRole()
+            val userId = tm.getUserId()
 
-            if (token.isNullOrBlank()) {
+            android.util.Log.d("SPLASH", "Check: Token=${token?.take(5)}... Role=$savedRole UserId=$userId")
+
+            if (token.isNullOrBlank() || savedRole.isNullOrBlank() || userId == 0) {
+                android.util.Log.e("SPLASH", "Missing Credentials! Going to Login.")
                 splashEvent = SplashEvent.NavigateToLogin
                 return@launch
             }
 
-            // Verify Token & Get Role from Backend
-            try {
-                val storedId = tm.getUserId()
-                val response = NetworkClient.homeApi.getHome(userId = storedId)
-                
-                if (response.isSuccessful && response.body()?.status == "success") {
-                    val data = response.body()?.data
-                    if (data != null) {
-                        val role = data.userStats.role
-                        val userId = data.userStats.userId
-                        
-                        // RE-SAVE GLOBAL SESSION
-                        UserSession.userId = userId
-                        tm.saveRole(role)
-
-                        splashEvent = SplashEvent.NavigateToHome(role)
+            // 3. Role-Based Verification
+            android.util.Log.d("SPLASH", "Verifying Role: $savedRole")
+            
+            if (savedRole == "Admin" || savedRole == "Delivery") {
+                android.util.Log.d("SPLASH", "Admin/Delivery Detected -> Restore Session")
+                // ✅ For Admin/Delivery: Restore Session & Navigate directly
+                UserSession.userId = userId
+                splashEvent = SplashEvent.NavigateToHome(savedRole)
+            } else {
+                android.util.Log.d("SPLASH", "User Detected -> Calling getHome")
+                // ✅ For User: Verify & Refresh Data via Home API
+                try {
+                    val response = NetworkClient.homeApi.getHome(userId = userId)
+                    
+                    if (response.isSuccessful && response.body()?.status == "success") {
+                        val data = response.body()?.data
+                        if (data != null) {
+                            UserSession.userId = data.userStats.userId
+                            tm.saveRole(data.userStats.role) // Refresh role just in case
+                            splashEvent = SplashEvent.NavigateToHome(data.userStats.role)
+                        } else {
+                            splashEvent = SplashEvent.NavigateToLogin
+                        }
                     } else {
-                        // Data missing -> invalid
+                        // Token might be expired or API rejected request
+                        tm.clearTokens()
                         splashEvent = SplashEvent.NavigateToLogin
                     }
-                } else {
-                    // Token expired or invalid
-                    tm.clearTokens()
+                } catch (e: Exception) {
+                    // Network Error:
+                    // Option A: Allow offline login if token exists (User Friendly)
+                    // Option B: Force Login (Security strict)
+                    // Current behavior: Force Login on error to be safe, or we could just trust the token if exception is just connection.
+                    // Let's trust the token if it's just a network error to allow "Offline" usage if desired, 
+                    // BUT for now, let's Stick to the existing logic: Fail -> Login.
                     splashEvent = SplashEvent.NavigateToLogin
                 }
-            } catch (e: Exception) {
-                // Network error or server down -> Fallback to Login
-                splashEvent = SplashEvent.NavigateToLogin
             }
         }
     }

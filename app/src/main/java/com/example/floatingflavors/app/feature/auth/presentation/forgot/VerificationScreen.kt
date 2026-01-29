@@ -238,18 +238,29 @@ fun VerificationScreen(
                         .fillMaxSize()
                         .background(
                             Brush.horizontalGradient(
-                                listOf(Color(0xFFFF7A18), Color(0xFFFF9A3C))
+                                if (otp.all { it.isNotEmpty() } && !loading)
+                                    listOf(Color(0xFFFF7A18), Color(0xFFFF9A3C))
+                                else
+                                    listOf(Color.Gray, Color.LightGray)
                             ),
                             RoundedCornerShape(50)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "Verify & Proceed →",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (loading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            "Verify & Proceed →",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

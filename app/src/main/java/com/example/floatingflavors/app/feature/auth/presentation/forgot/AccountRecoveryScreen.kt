@@ -124,8 +124,8 @@ fun AccountRecoveryScreen(
                     Spacer(Modifier.height(24.dp))
 
                     Button(
-                        onClick = { onSendOtp(email) },
-                        enabled = email.contains("@") && !loading,
+                        onClick = { onSendOtp(email.trim()) },
+                        enabled = email.trim().contains("@") && !loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -138,18 +138,29 @@ fun AccountRecoveryScreen(
                                 .fillMaxSize()
                                 .background(
                                     Brush.horizontalGradient(
-                                        listOf(Color(0xFFFF7A18), Color(0xFFFF9A3C))
+                                        if (email.contains("@") && !loading)
+                                            listOf(Color(0xFFFF7A18), Color(0xFFFF9A3C)) // Active Orange
+                                        else
+                                            listOf(Color.Gray, Color.LightGray) // Disabled
                                     ),
                                     RoundedCornerShape(50)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "Send OTP →",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            if (loading) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    "Send OTP →",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }

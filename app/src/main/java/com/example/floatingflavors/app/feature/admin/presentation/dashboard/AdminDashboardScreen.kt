@@ -14,23 +14,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun AdminDashboardScreen() {
+fun AdminDashboardScreen(
+    viewModel: AdminDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    val counts by viewModel.counts.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCounts()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState()) // enable vertical scrolling
-            .padding(bottom = 80.dp) // keep content above bottom nav
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 80.dp)
     ) {
         Header()
         Spacer(Modifier.height(12.dp))
-        MetricsSection()
+        MetricsSection(counts = counts)
         Spacer(Modifier.height(12.dp))
         AIInsightsSection()
         Spacer(Modifier.height(12.dp))
-        LiveOrderSummarySection()
+        LiveOrderSummarySection(counts = counts)
         Spacer(Modifier.height(12.dp))
         RevenueInsightsSection()
         Spacer(Modifier.height(24.dp))
@@ -56,7 +68,7 @@ private fun Header() {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Thursday, November 6, 2025",
+                text = "Live Overview",
                 color = Color.White.copy(alpha = 0.95f),
                 fontSize = 12.sp
             )
@@ -65,14 +77,28 @@ private fun Header() {
 }
 
 @Composable
-private fun MetricsSection() {
+private fun MetricsSection(counts: com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCounts?) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricCard(bg = Color(0xFF2196F3), value = "42", title = "Today's Orders", caption = "Today", modifier = Modifier.weight(1f))
-            MetricCard(bg = Color(0xFF00C853), value = "₹24.5k", title = "Total Revenue", caption = "Revenue", modifier = Modifier.weight(1f))
+            // TOTAL ORDERS
+            MetricCard(
+                bg = Color(0xFF2196F3), 
+                value = counts?.total?.toString() ?: "0", 
+                title = "Total Orders", 
+                caption = "All Time", 
+                modifier = Modifier.weight(1f)
+            )
+            // REVENUE (Placeholder - Needs specific API)
+            MetricCard(
+                bg = Color(0xFF00C853), 
+                value = "₹ --", 
+                title = "Total Revenue", 
+                caption = "Revenue", 
+                modifier = Modifier.weight(1f)
+            )
         }
 
         Spacer(Modifier.height(12.dp))
@@ -81,8 +107,22 @@ private fun MetricsSection() {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricCard(bg = Color(0xFF9C27B0), value = "1,248", title = "Active Users", caption = "+12%", modifier = Modifier.weight(1f))
-            MetricCard(bg = Color(0xFFFF5722), value = "8", title = "Pending Deliveries", caption = "Live", modifier = Modifier.weight(1f))
+            // ACTIVE (Cooking/Processing)
+            MetricCard(
+                bg = Color(0xFF9C27B0), 
+                value = counts?.active?.toString() ?: "0", 
+                title = "Active / Cooking", 
+                caption = "In Kitchen", 
+                modifier = Modifier.weight(1f)
+            )
+            // PENDING (New Orders)
+            MetricCard(
+                bg = Color(0xFFFF5722), 
+                value = counts?.pending?.toString() ?: "0", 
+                title = "Pending Orders", 
+                caption = "Action Needed", 
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -128,7 +168,7 @@ private fun InsightItem(text: String) {
 
 
 @Composable
-private fun LiveOrderSummarySection() {
+private fun LiveOrderSummarySection(counts: com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCounts?) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(text = "Live Order Summary", style = MaterialTheme.typography.titleMedium)
@@ -137,16 +177,21 @@ private fun LiveOrderSummarySection() {
             // give each small stat a clear background and text color
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // The weight modifier is now correctly applied here, inside the RowScope
-                SmallStat(number = "18", label = "Active", bg = Color(0xFFEEF7FF), contentTint = Color(0xFF2176F3), modifier = Modifier.weight(1f))
-                SmallStat(number = "312", label = "Completed", bg = Color(0xFFEEFDF3), contentTint = Color(0xFF00A65A), modifier = Modifier.weight(1f))
-                SmallStat(number = "5", label = "Pending", bg = Color(0xFFFFF6EE), contentTint = Color(0xFFF57C00), modifier = Modifier.weight(1f))
+                SmallStat(number = counts?.active?.toString() ?: "0", label = "Active", bg = Color(0xFFEEF7FF), contentTint = Color(0xFF2176F3), modifier = Modifier.weight(1f))
+                SmallStat(number = counts?.completed?.toString() ?: "0", label = "Completed", bg = Color(0xFFEEFDF3), contentTint = Color(0xFF00A65A), modifier = Modifier.weight(1f))
+                SmallStat(number = counts?.pending?.toString() ?: "0", label = "Pending", bg = Color(0xFFFFF6EE), contentTint = Color(0xFFF57C00), modifier = Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                LinearProgressIndicator(progress = 0.78f, modifier = Modifier.weight(1f).height(8.dp))
+                // Determine progress
+                val total = (counts?.total ?: 1).toFloat()
+                val completed = (counts?.completed ?: 0).toFloat()
+                val progress = if(total > 0) completed / total else 0f
+                
+                LinearProgressIndicator(progress = progress, modifier = Modifier.weight(1f).height(8.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("78%")
+                Text("${(progress * 100).toInt()}%")
             }
         }
     }

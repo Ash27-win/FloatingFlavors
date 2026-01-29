@@ -47,9 +47,23 @@ object NetworkClient {
         applicationContext = context.applicationContext
     }
 
+    // Cookie Store for Session Persistence (Critical for PHP Sessions)
+    private val cookieStore = HashMap<String, List<okhttp3.Cookie>>()
+
+    private val cookieJar = object : okhttp3.CookieJar {
+        override fun saveFromResponse(url: okhttp3.HttpUrl, cookies: List<okhttp3.Cookie>) {
+            cookieStore[url.host] = cookies
+        }
+
+        override fun loadForRequest(url: okhttp3.HttpUrl): List<okhttp3.Cookie> {
+            return cookieStore[url.host] ?: emptyList()
+        }
+    }
+
     private val httpClient: OkHttpClient by lazy {
         val ctx = applicationContext ?: throw IllegalStateException("NetworkClient must be initialized with context!")
         OkHttpClient.Builder()
+            .cookieJar(cookieJar) // 🔥 Enable Cookies
             .addInterceptor(logging)
             .addInterceptor(AuthInterceptor(ctx))
             .authenticator(TokenAuthenticator(ctx)) // 🔥 Silent Refresh Logic
