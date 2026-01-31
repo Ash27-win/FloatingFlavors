@@ -97,7 +97,7 @@ fun UserShell(
     // ✅ CONTEXT (REQUIRED FOR ROOM)
     val context = LocalContext.current
 
-    // ✅ CHAT DATABASE + DAO (FIX)
+    // ✅ CHAT DATABASE + DAO (RESTORED)
     val chatDao = remember {
         ChatDatabase.getInstance(context).chatDao()
     }
@@ -110,6 +110,41 @@ fun UserShell(
                 dao = chatDao
             )
         )
+    }
+
+    // 🔔 NOTIFICATION INTENT HANDLER
+    // 🔔 NOTIFICATION INTENT HANDLER
+    LaunchedEffect(Unit) {
+        // 1. Cold Start / Pending
+        if (com.example.floatingflavors.app.core.navigation.PendingNotification.hasPending()) {
+            val pending = com.example.floatingflavors.app.core.navigation.PendingNotification.consume()
+            pending?.let { (screen, refId) ->
+                Log.d("USER_SHELL", "Handling Pending: $screen ref=$refId")
+                if (screen == "OrderTrackingScreen") {
+                    navController.navigate(
+                        "user_order_tracking/$refId/INDIVIDUAL"
+                    )
+                } else if (screen == "UserOrderDetails") {
+                    navController.navigate(
+                        Screen.UserOrderDetails.createRoute(refId)
+                    )
+                }
+            }
+        }
+        
+        // 2. Live Events (Foreground)
+        com.example.floatingflavors.app.core.service.NotificationEventBus.events.collect { event ->
+            if (event is com.example.floatingflavors.app.core.service.NotificationEvent.Navigate) {
+                 val screen = event.screen
+                 val refId = event.referenceId
+                 Log.d("USER_SHELL", "Handling Live Event: $screen ref=$refId")
+                 if (screen == "OrderTrackingScreen") {
+                     navController.navigate("user_order_tracking/$refId/INDIVIDUAL")
+                 } else if (screen == "UserOrderDetails") {
+                     navController.navigate(Screen.UserOrderDetails.createRoute(refId ?: ""))
+                 }
+            }
+        }
     }
 
     Scaffold(

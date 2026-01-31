@@ -91,7 +91,9 @@ fun DeliveryOrderDetailsScreen(
             viewModel.startObservingPickup(context)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                viewModel.resumeTrackingIfNeeded(context)
+                if (DeliveryPermissionHandler.hasLocationPermission(context)) {
+                    viewModel.resumeTrackingIfNeeded(context)
+                }
             }
         } else {
              // Initial fetch (if permission already granted)
@@ -293,6 +295,29 @@ fun DeliveryOrderDetailsScreen(
             }
 
             Spacer(Modifier.height(16.dp))
+            
+            // 🔥 REJECTION WARNING (NEW)
+            if (data.status == "REJECTED") {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    border = BorderStroke(1.dp, Color.Red),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Warning, null, tint = Color.Red)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Execution Problem", color = Color.Red, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Reason: ${data.rejectReason ?: "Unavailable"}",
+                            color = Color.Red
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
 
             /* ---------------- PICKUP / DROP CARD ---------------- */
             Card(

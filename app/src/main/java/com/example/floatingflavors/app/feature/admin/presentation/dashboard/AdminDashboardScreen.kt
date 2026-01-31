@@ -1,10 +1,13 @@
 package com.example.floatingflavors.app.feature.admin.presentation.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,9 +24,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun AdminDashboardScreen(
-    viewModel: AdminDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: AdminDashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onNotificationClick: () -> Unit = {}
 ) {
     val counts by viewModel.counts.collectAsState()
+    val unreadCount by viewModel.unreadCount.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadCounts()
@@ -36,7 +41,7 @@ fun AdminDashboardScreen(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 80.dp)
     ) {
-        Header()
+        Header(unreadCount = unreadCount, onNotificationClick = onNotificationClick)
         Spacer(Modifier.height(12.dp))
         MetricsSection(counts = counts)
         Spacer(Modifier.height(12.dp))
@@ -50,7 +55,7 @@ fun AdminDashboardScreen(
 }
 
 @Composable
-private fun Header() {
+private fun Header(unreadCount: Int = 0, onNotificationClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -59,19 +64,47 @@ private fun Header() {
         tonalElevation = 6.dp,
         shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                text = "Admin Dashboard",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "Live Overview",
-                color = Color.White.copy(alpha = 0.95f),
-                fontSize = 12.sp
-            )
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Admin Dashboard",
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Live Overview",
+                    color = Color.White.copy(alpha = 0.95f),
+                    fontSize = 12.sp
+                )
+            }
+            
+            // Notification Icon
+            Box(Modifier.size(40.dp)) {
+                IconButton(onClick = onNotificationClick) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                if (unreadCount > 0) {
+                     Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(Color.Red, RoundedCornerShape(50))
+                            .align(Alignment.TopEnd)
+                            .offset(x = (-4).dp, y = 4.dp)
+                            .border(1.dp, Color.White, RoundedCornerShape(50))
+                    )
+                }
+            }
         }
     }
 }

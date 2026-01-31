@@ -26,12 +26,13 @@ class DeliveryRepository(
 
     /* ---------------- ORDER ACTIONS ---------------- */
 
-    suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto =
-        api.updateOrderStatus(
-            orderId = orderId,
-            status = "OUT_FOR_DELIVERY",
-            deliveryPartnerId = deliveryPartnerId
+    suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto {
+        val res = api.acceptOrder(orderId, deliveryPartnerId)
+        return SimpleResponseDto(
+            success = res.status,
+            message = res.message
         )
+    }
 
     suspend fun rejectOrder(orderId: Int): SimpleResponseDto =
         api.updateOrderStatus(

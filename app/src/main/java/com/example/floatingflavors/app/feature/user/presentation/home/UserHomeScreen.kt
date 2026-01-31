@@ -101,7 +101,19 @@ fun UserHomeScreen(
                             Icon(imageVector = Icons.Default.CardMembership, contentDescription = "Membership")
                         }
                         IconButton(onClick = onOpenNotifications) {
-                            Icon(imageVector = Icons.Outlined.NotificationsNone, contentDescription = "Notifications")
+                            Box {
+                                Icon(imageVector = Icons.Outlined.NotificationsNone, contentDescription = "Notifications")
+                                val unreadCount by viewModel.unreadCount.collectAsState()
+                                if (unreadCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(Color.Red, CircleShape)
+                                            .align(Alignment.TopEnd)
+                                            .offset(x = 1.dp, y = (-1).dp)
+                                    )
+                                }
+                            }
                         }
                         IconButton(onClick = { /* profile */ }) {
                             Icon(imageVector = Icons.Default.Person, contentDescription = "Profile")

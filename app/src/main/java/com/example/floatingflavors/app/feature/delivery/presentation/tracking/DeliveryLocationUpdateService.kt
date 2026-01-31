@@ -65,17 +65,18 @@ class DeliveryLocationUpdateService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
         when (intent?.action) {
-
             "START_TRACKING" -> {
                 orderId = intent.getIntExtra("ORDER_ID", -1)
-                deliveryPartnerId =
-                    intent.getIntExtra("DELIVERY_PARTNER_ID", 0)
+                deliveryPartnerId = intent.getIntExtra("DELIVERY_PARTNER_ID", 0)
 
                 if (orderId == -1) {
                     Log.e("DELIVERY_GPS", "❌ orderId missing")
                     stopSelf()
                     return START_NOT_STICKY
                 }
+                
+                // Removed strict manual check to rely on system enforcement in startForeground
+                // This restores "Old Logic" flow where we attempt to start if UI says we can.
 
                 if (!isLocationEnabled()) {
                     showEnableGpsNotification()
@@ -86,7 +87,27 @@ class DeliveryLocationUpdateService : Service() {
                 requestIgnoreBatteryOptimizations()
 
                 isTracking = true
-                startForeground(NOTIFICATION_ID, buildNotification())
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        try {
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                        } catch (e: Exception) {
+                            // Fallback for older SDKs if compilation fails (unlikely)
+                        }
+                        
+                        startForeground(
+                            NOTIFICATION_ID, 
+                            buildNotification(), 
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                        )
+                    } else {
+                        startForeground(NOTIFICATION_ID, buildNotification())
+                    }
+                } catch (e: Exception) {
+                    Log.e("DELIVERY_GPS", "❌ Failed to start foreground service: ${e.message}")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
                 acquireWakeLock()
                 startLocationUpdates()
             }
@@ -153,6 +174,7 @@ class DeliveryLocationUpdateService : Service() {
     }
 
     private fun showEnableGpsNotification() {
+        Log.d("DELIVERY_GPS", "Showing GPS Enable Notification")
         val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
@@ -166,7 +188,14 @@ class DeliveryLocationUpdateService : Service() {
             .addAction(0, "Enable GPS", pendingIntent)
             .build()
 
-        startForeground(NOTIFICATION_ID, notification)
+        try {
+            // Even this needs permission if service type is location!
+            startForeground(NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+             Log.e("DELIVERY_GPS", "❌ Failed to show GPS notification: ${e.message}")
+             // If we can't show notification due to permission, just die.
+             stopSelf()
+        }
     }
 
     @SuppressLint("MissingPermission")

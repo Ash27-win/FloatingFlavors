@@ -33,4 +33,9 @@ interface AuthApi {
 
     @POST("api/reset_password.php")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): ApiResponse
+
+    @POST("update_fcm_token.php")
+    suspend fun updateFcmToken(
+        @Body body: com.example.floatingflavors.app.feature.auth.data.remote.dto.UpdateFcmTokenRequest
+    ): SimpleResponseDto
 }

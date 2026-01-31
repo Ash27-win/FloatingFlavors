@@ -16,13 +16,23 @@ import com.example.floatingflavors.app.feature.delivery.presentation.components.
 @Composable
 fun DeliveryDashboardScreen(
     viewModel: DeliveryDashboardViewModel,
-    onViewDetails: (Int) -> Unit
+    onViewDetails: (Int) -> Unit,
+    onLiveTracking: (String) -> Unit, // ✅ NEW param for navigation
+    onNotificationClick: () -> Unit = {}
 ) {
     LaunchedEffect(Unit) {
         viewModel.loadDashboard()
     }
+    
+    // ✅ Navigation Handler
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { orderId ->
+            onLiveTracking(orderId)
+        }
+    }
 
     val state by viewModel.state.collectAsState()
+    val unreadCount by viewModel.unreadCount.collectAsState()
 
     LazyColumn(
         modifier = Modifier
@@ -32,7 +42,13 @@ fun DeliveryDashboardScreen(
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
 
-        item { DeliveryHeader(state?.deliveryPartnerName ?: "") }
+        item { 
+            DeliveryHeader(
+                name = state?.deliveryPartnerName ?: "",
+                unreadCount = unreadCount,
+                onNotificationClick = onNotificationClick
+            ) 
+        }
         item { OnlineStatusCard() }
 
         item {
@@ -66,6 +82,9 @@ fun DeliveryDashboardScreen(
                     onClick = {
                         // ✅ FIXED: use callback (NO navController here)
                         onViewDetails(order.id)
+                    },
+                    onAccept = {
+                        viewModel.acceptOrder(order.id)
                     }
                 )
             }

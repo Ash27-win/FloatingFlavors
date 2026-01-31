@@ -17,6 +17,7 @@ import android.os.Bundle
 import androidx.annotation.RequiresApi
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService
 import com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryLocationUpdateService
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -37,9 +38,47 @@ class MainActivity : ComponentActivity() {
             this,
             getSharedPreferences("osm", MODE_PRIVATE)
         )
+        
+        // Handle Notification Intent
+        intent?.extras?.let { extras ->
+            val screen = extras.getString("screen")
+            val refId = extras.getString("reference_id")
+            if (screen != null) {
+                com.example.floatingflavors.app.core.navigation.PendingNotification.screen = screen
+                com.example.floatingflavors.app.core.navigation.PendingNotification.referenceId = refId
+                android.util.Log.d("MAIN_ACTIVITY", "Pending Notification: $screen ID: $refId")
+            }
+        }
+        
+        // 🔥 REQUEST NOTIFICATION PERMISSION (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 102)
+            }
+        }
 
         setContent {
             FloatingFlavorsApp()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent) // Update the intent
+
+        intent.extras?.let { extras ->
+            val screen = extras.getString("screen")
+            val refId = extras.getString("reference_id")
+            
+            if (screen != null) {
+                // emit event to bus (since UI is already running)
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                    com.example.floatingflavors.app.core.service.NotificationEventBus.emitEvent(
+                        com.example.floatingflavors.app.core.service.NotificationEvent.Navigate(screen, refId)
+                    )
+                }
+            }
         }
     }
 
@@ -49,6 +88,15 @@ class MainActivity : ComponentActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        if (requestCode == 102) {
+             if (grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                 Toast.makeText(this, "Notifications Enabled", Toast.LENGTH_SHORT).show()
+             } else {
+                 Toast.makeText(this, "Notifications are required for updates", Toast.LENGTH_LONG).show()
+             }
+             // Don't return, let location logic below run potentially
+        }
 
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             val granted = grantResults.all {

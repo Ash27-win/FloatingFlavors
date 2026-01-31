@@ -9,17 +9,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class UserHomeViewModel : ViewModel() {
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import kotlinx.coroutines.flow.stateIn
+
+class UserHomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repo = HomeRepository()
+    private val notificationRepository = com.example.floatingflavors.app.feature.notification.data.NotificationRepository(
+        com.example.floatingflavors.app.core.network.NetworkClient.notificationApi,
+        com.example.floatingflavors.app.core.data.local.AppDatabase.getDatabase(application)
+    )
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Idle)
     val uiState: StateFlow<HomeUiState> = _uiState
+    
+    // ✅ Unread Badge
+    val unreadCount: StateFlow<Int> = notificationRepository.unreadCount
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), 0)
 
     fun loadHome() {
         _uiState.value = HomeUiState.Loading
 
         viewModelScope.launch {
+            // Sync Notifications
+            launch { notificationRepository.refreshNotifications() }
+            
             when (val result = repo.fetchHome()) {
                 is RepoResult.Success -> {
                     _uiState.value = HomeUiState.Success(result.data)

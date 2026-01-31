@@ -30,6 +30,20 @@ fun DeliveryShell(
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
 
+    // 🔔 NOTIFICATION INTENT HANDLER
+    LaunchedEffect(Unit) {
+        if (com.example.floatingflavors.app.core.navigation.PendingNotification.hasPending()) {
+            val pending = com.example.floatingflavors.app.core.navigation.PendingNotification.consume()
+            pending?.let { (screen, refId) ->
+                if (screen == "OrderTrackingScreen" && refId.isNotEmpty()) {
+                    navController.navigate(
+                        Screen.DeliveryTracking.createRoute(refId.toInt())
+                    )
+                }
+            }
+        }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -78,19 +92,46 @@ fun DeliveryShell(
                 val deliveryPartnerId = com.example.floatingflavors.app.core.UserSession.userId
 
                 val repository = DeliveryRepository(NetworkClient.deliveryApi)
+                
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val notificationRepository = remember {
+                     com.example.floatingflavors.app.feature.notification.data.NotificationRepository(
+                        NetworkClient.notificationApi,
+                        com.example.floatingflavors.app.core.data.local.AppDatabase.getDatabase(context)
+                    )
+                }
 
                 val factory = DeliveryDashboardViewModelFactory(
                     repository = repository,
+                    notificationRepository = notificationRepository,
                     deliveryPartnerId = deliveryPartnerId
                 )
 
                 val dashboardViewModel: DeliveryDashboardViewModel =
                     viewModel(factory = factory)
 
+                // 🔥 LISTEN FOR REAL-TIME NOTIFICATIONS
+                val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+                LaunchedEffect(lifecycleOwner) {
+                    com.example.floatingflavors.app.core.service.NotificationEventBus.events.collect { event: com.example.floatingflavors.app.core.service.NotificationEvent ->
+                        when (event) {
+                            is com.example.floatingflavors.app.core.service.NotificationEvent.NewOrder -> {
+                                dashboardViewModel.refreshOrders()
+                            }
+                            is com.example.floatingflavors.app.core.service.NotificationEvent.Navigate -> {
+                                if (event.screen == "OrderTrackingScreen" && !event.referenceId.isNullOrEmpty()) {
+                                    navController.navigate(
+                                        Screen.DeliveryTracking.createRoute(event.referenceId.toInt())
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 DeliveryDashboardScreen(
                     viewModel = dashboardViewModel,
                     onViewDetails = { orderId ->
-
                         val activeOrder = dashboardViewModel.state.value
                             ?.activeOrder
                             ?.takeIf { it.id == orderId }
@@ -104,7 +145,25 @@ fun DeliveryShell(
                                 Screen.DeliveryOrderDetails.createRoute(orderId)
                             )
                         }
+                    },
+                    onLiveTracking = { orderId ->
+                        navController.navigate(
+                             Screen.DeliveryTracking.createRoute(orderId.toInt())
+                        )
+                    },
+                    onNotificationClick = {
+                        navController.navigate(Screen.DeliveryNotifications.route)
                     }
+                )
+            }
+            
+            /* ---------------- NOTIFICATIONS ---------------- */
+            composable(Screen.DeliveryNotifications.route) {
+                // Ensure Application context is available
+                val vm: com.example.floatingflavors.app.feature.delivery.presentation.notification.DeliveryNotificationViewModel = viewModel()
+                com.example.floatingflavors.app.feature.delivery.presentation.notification.DeliveryNotificationScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

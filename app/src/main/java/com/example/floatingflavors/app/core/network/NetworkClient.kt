@@ -175,4 +175,7 @@ object NetworkClient {
         retrofit.create(DeliveryApi::class.java)
     }
 
+    val notificationApi: com.example.floatingflavors.app.feature.notification.data.remote.NotificationApi by lazy {
+        retrofit.create(com.example.floatingflavors.app.feature.notification.data.remote.NotificationApi::class.java)
+    }
 }

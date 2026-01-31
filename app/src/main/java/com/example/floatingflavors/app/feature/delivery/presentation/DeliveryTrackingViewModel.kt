@@ -54,11 +54,14 @@ class DeliveryTrackingViewModel : ViewModel() {
 
                 val addr = tracking.deliveryAddress
 
+                val lat = addr?.latitude ?: 0.0
+                val lng = addr?.longitude ?: 0.0
+
                 // ❌ No valid destination → stop
                 if (
                     addr == null ||
-                    addr.latitude == 0.0 ||
-                    addr.longitude == 0.0
+                    lat == 0.0 ||
+                    lng == 0.0
                 ) {
                     _destination.value = null
                     _routePoints.value = emptyList()
@@ -66,7 +69,7 @@ class DeliveryTrackingViewModel : ViewModel() {
                     return@launch
                 }
 
-                val destPoint = GeoPoint(addr.latitude, addr.longitude)
+                val destPoint = GeoPoint(lat, lng)
                 _destination.value = destPoint
 
                 // 2️⃣ Start LIVE GPS polling

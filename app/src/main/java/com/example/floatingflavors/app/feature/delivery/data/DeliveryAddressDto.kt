@@ -5,6 +5,6 @@ data class DeliveryAddressDto(
     val city: String,
     val pincode: String,
     val note: String?,
-    val latitude: Double,
-    val longitude: Double
+    val latitude: Double?,
+    val longitude: Double?
 )

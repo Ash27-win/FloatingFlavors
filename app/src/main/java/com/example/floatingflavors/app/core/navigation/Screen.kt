@@ -20,7 +20,10 @@ sealed class Screen(val route: String) {
 
     // Admin inner screens
     object AdminDashboard : Screen("admin_dashboard")
-    object AdminOrders : Screen("admin_orders")                 // <-- new
+    object AdminOrders : Screen("admin_orders?orderId={orderId}") {
+        fun createRoute(orderId: String? = null) = 
+            if (orderId != null) "admin_orders?orderId=$orderId" else "admin_orders"
+    }
     object AdminMenuInventory : Screen("admin_menu_inventory")
     object AdminAddFood : Screen("admin_add_food")
     object AdminEditFood : Screen("admin_edit_food/{id}") {
@@ -111,4 +114,6 @@ sealed class Screen(val route: String) {
         fun createRoute(orderId: Int): String =
             "delivery_tracking/$orderId"
     }
+    
+    object DeliveryNotifications : Screen("delivery_notifications")
 }

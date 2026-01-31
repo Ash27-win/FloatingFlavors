@@ -25,7 +25,10 @@ data class DeliveryOrderData(
 
     // 🔥 THIS WAS MISSING — FINAL FIX
     @SerializedName("delivery_address")
-    val deliveryAddress: String?
+    val deliveryAddress: String?,
+
+    @SerializedName("reject_reason")
+    val rejectReason: String?
 )
 
 

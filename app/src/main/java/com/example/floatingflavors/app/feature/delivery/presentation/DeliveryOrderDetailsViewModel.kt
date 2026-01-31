@@ -28,7 +28,8 @@ data class DeliveryOrder(
     val items: List<OrderItemDto>,
     val distance: String?,
     val createdAt: String?,
-    val deliveryAddress: String?
+    val deliveryAddress: String?,
+    val rejectReason: String?
 )
 
 /* -------------------- VIEWMODEL -------------------- */
@@ -74,7 +75,8 @@ class DeliveryOrderDetailsViewModel(
                         items = d.items ?: emptyList(),
                         distance = d.distance,
                         createdAt = d.createdAt,
-                        deliveryAddress = d.deliveryAddress
+                        deliveryAddress = d.deliveryAddress,
+                        rejectReason = d.rejectReason
                     )
                 }
             } finally {
@@ -89,18 +91,33 @@ class DeliveryOrderDetailsViewModel(
         if (observeJob != null) return
 
         observeJob = viewModelScope.launch {
+            // 🔥 RESTORED: Listen to Local Stream First (Driver's Own Location)
+            launch {
+                com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryLocationStream.liveLocation.collect { point ->
+                    if (point != null) {
+                        android.util.Log.d("DELIVERY_UI", "📍 Map Update: ${point.latitude}, ${point.longitude}")
+                        val bearingVal = com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryLocationStream.bearing.value
+                        updatePickupAddressFromLocation(
+                            context = context,
+                            latitude = point.latitude,
+                            longitude = point.longitude,
+                            bearing = bearingVal
+                        )
+                    }
+                }
+            }
+
+            // Keep backend polling as fallback or for syncing other data
             while (isActive) {
                 // If order is active (OUT_FOR_DELIVERY), fetch from backend (Tracking)
                 // If not, we might want to show local device location if available?
                 val loc = repository.getLastLiveLocation(orderId)
                 if (loc != null) {
-                    updatePickupAddressFromLocation(
-                        context,
-                        loc.latitude,
-                        loc.longitude
-                    )
+                    // Update only if local stream is silent (optional check) or just overwrite
+                    // But since we are the driver, local stream is truth. 
+                    // Let's just log backend sync or ignore it for UI smoothness logic
                 }
-                kotlinx.coroutines.delay(8000)
+                kotlinx.coroutines.delay(10000)
             }
         }
     }
@@ -350,12 +367,30 @@ class DeliveryOrderDetailsViewModel(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startTracking(context: Context) {
+        // 🔥 CRITICAL SAFETY: Check Permission AGAIN before starting service
+        if (androidx.core.content.ContextCompat.checkSelfPermission(
+                context, 
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            
+            // Log or show error, but DO NOT start service
+            android.util.Log.e("DELIVERY_GPS", "❌ Cannot start service: Permission missing")
+            _pickupAddress.value = "Location permission missing!"
+            return
+        }
+
         val intent = Intent(context, DeliveryLocationUpdateService::class.java).apply {
             action = "START_TRACKING"
             putExtra("ORDER_ID", orderId)
             putExtra("DELIVERY_PARTNER_ID", deliveryPartnerId)
         }
-        context.startForegroundService(intent)
+        
+        try {
+            context.startForegroundService(intent)
+        } catch (e: Exception) {
+             android.util.Log.e("DELIVERY_GPS", "❌ Failed to start service: ${e.message}")
+             _pickupAddress.value = "Service error: ${e.message}"
+        }
     }
 
     private fun stopTracking(context: Context) {

@@ -62,6 +62,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
                     loggedInUser = user
                     isLoading = false
+                    syncFcmToken() // Sync Token
                     onSuccess(user.role)
                 } else {
                     isLoading = false
@@ -71,6 +72,25 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 isLoading = false
                 errorMessage = "Login failed: ${e.message}"
             }
+        }
+    }
+
+    private fun syncFcmToken() {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful) return@addOnCompleteListener
+                val token = task.result
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        repository.updateFcmToken(token)
+                        Log.d("LOGIN", "FCM Token Synced")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

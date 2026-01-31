@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
     id("com.google.devtools.ksp") version "2.0.21-1.0.25"
 }
 
@@ -12,7 +13,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.floatingflavors"
+        applicationId = "com.example.floatingflavors.app"
         minSdk = 23
         targetSdk = 36
         versionCode = 1
@@ -124,6 +125,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     add("ksp", "androidx.room:room-compiler:2.6.1")
 
+    // Firebase
+    implementation("com.google.firebase:firebase-messaging:23.2.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // Using a newer BOM if possible, or sticking to compatible versions
 }
 
 

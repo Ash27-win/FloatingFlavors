@@ -2,14 +2,18 @@ package com.example.floatingflavors.app.feature.admin.presentation.notification
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -17,12 +21,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.floatingflavors.app.feature.delivery.presentation.notification.NotificationUiModel
 
 @Composable
-fun AdminNotificationScreen() {
+fun AdminNotificationScreen(
+    viewModel: AdminNotificationViewModel = viewModel()
+) {
 
+    val notifications by viewModel.notifications.collectAsState()
     val pageBg = Color(0xFFF2F2F7)
-    val headerBlue = Color(0xFF2563EB) // 🔵 normal admin blue
+    val headerBlue = Color(0xFF2563EB)
 
     Column(
         modifier = Modifier
@@ -72,19 +81,22 @@ fun AdminNotificationScreen() {
                         tint = Color.White,
                         modifier = Modifier.size(28.dp)
                     )
-                    Box(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .background(Color.White, CircleShape)
-                            .align(Alignment.TopEnd),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "3",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = headerBlue
-                        )
+                    val unreadCount = notifications.count { !it.isRead }
+                    if (unreadCount > 0) {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .background(Color.White, CircleShape)
+                                .align(Alignment.TopEnd),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = unreadCount.toString(),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = headerBlue
+                            )
+                        }
                     }
                 }
             }
@@ -92,73 +104,70 @@ fun AdminNotificationScreen() {
 
         /* ---------- CONTENT ---------- */
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+        if (notifications.isEmpty()) {
+             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No notifications yet", color = Color.Gray)
+             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                
+                // Show "New" Header if any unread
+                if (notifications.any { !it.isRead }) {
+                    item {
+                        SectionHeader(title = "New Notifications", count = notifications.count { !it.isRead })
+                    }
+                }
 
-            item {
-                SectionHeader(title = "New Notifications", count = 3)
+                items(notifications, key = { it.id }) { item ->
+                    
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = {
+                            if (it == SwipeToDismissBoxValue.EndToStart) {
+                                viewModel.delete(item.id)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        backgroundContent = {
+                            val color = Color.Red
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(color, RoundedCornerShape(16.dp))
+                                    .padding(end = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        content = {
+                            AdminNotificationCard(
+                                title = item.title,
+                                message = item.message,
+                                time = item.time,
+                                icon = if (item.type == "ALERT") Icons.Default.Warning else Icons.Default.ShoppingBag,
+                                iconTint = if (item.type == "ALERT") Color(0xFFF97316) else Color(0xFF38BDF8),
+                                unread = !item.isRead,
+                                onClick = { viewModel.markAsRead(item.id) }
+                            )
+                        }
+                    )
+                }
             }
-
-            item {
-                AdminNotificationCard(
-                    title = "New Order Received",
-                    message = "You received 10 new orders in the last 30 mins.",
-                    time = "5 mins ago",
-                    icon = Icons.Default.ShoppingBag,
-                    iconTint = Color(0xFF38BDF8),
-                    unread = true
-                )
-            }
-
-            item {
-                AdminNotificationCard(
-                    title = "Low Stock Alert",
-                    message = "Veg Biryani is below safe limit. Only 3 portions left.",
-                    time = "15 mins ago",
-                    icon = Icons.Default.Warning,
-                    iconTint = Color(0xFFF97316),
-                    unread = true
-                )
-            }
-
-            item {
-                AdminNotificationCard(
-                    title = "AI Tip",
-                    message = "Offer 10% off on Pasta to boost weekday orders.",
-                    time = "1 hour ago",
-                    icon = Icons.Default.AutoAwesome,
-                    iconTint = Color(0xFF6366F1),
-                    unread = true,
-                    isBlue = true
-                )
-            }
-
-            item {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "Earlier",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
-            }
-
-            item {
-                AdminNotificationCard(
-                    title = "Bulk Order Received",
-                    message = "Corporate event booking for 50 people on Nov 10.",
-                    time = "5 hours ago",
-                    icon = Icons.Default.ShoppingBag,
-                    iconTint = Color(0xFF38BDF8),
-                    unread = false
-                )
-            }
-
-            item { Spacer(Modifier.height(32.dp)) }
         }
     }
 }
@@ -201,61 +210,68 @@ private fun AdminNotificationCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconTint: Color,
     unread: Boolean,
-    isBlue: Boolean = false
+    isBlue: Boolean = false,
+    onClick: () -> Unit
 ) {
-    val bgColor = if (isBlue) Color(0xFFDDEBF5) else Color(0xFFF6E8E8)
-
-    Row(
+    val bgColor = if (unread) Color.White else Color(0xFFF6E8E8) // Highlight unread
+    
+    // Using Card for click + shadow
+    Card(
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
             .shadow(1.dp, RoundedCornerShape(16.dp))
-            .background(bgColor, RoundedCornerShape(16.dp))
-            .border(1.dp, Color(0x22000000), RoundedCornerShape(16.dp))
-            .padding(16.dp),
-        verticalAlignment = Alignment.Top
+            .clickable { onClick() }
     ) {
-
-        Box(
+        Row(
             modifier = Modifier
-                .size(44.dp)
-                .background(Color.White, CircleShape),
-            contentAlignment = Alignment.Center
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
-        }
 
-        Spacer(Modifier.width(14.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    modifier = Modifier.weight(1f)
-                )
-                if (unread) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(Color.Red, CircleShape)
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color.White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.width(14.dp))
 
-            Text(
-                text = message,
-                fontSize = 14.sp,
-                color = Color(0xFF4B5563),
-                lineHeight = 18.sp
-            )
+            Column(modifier = Modifier.weight(1f)) {
 
-            Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (unread) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(Color.Red, CircleShape)
+                        )
+                    }
+                }
 
-            Text(time, fontSize = 12.sp, color = Color.Gray)
+                Spacer(Modifier.height(6.dp))
+
+                Text(
+                    text = message,
+                    fontSize = 14.sp,
+                    color = Color(0xFF4B5563),
+                    lineHeight = 18.sp
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(time, fontSize = 12.sp, color = Color.Gray)
+            }
         }
     }
 }

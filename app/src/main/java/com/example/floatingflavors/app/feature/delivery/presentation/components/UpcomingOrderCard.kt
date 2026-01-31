@@ -19,7 +19,8 @@ private val Border = Color(0xFFF0E6DE)
 @Composable
 fun UpcomingOrderCard(
     order: OrderDto,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onAccept: () -> Unit // ✅ Added Callback
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -57,6 +58,18 @@ fun UpcomingOrderCard(
                 fontSize = 12.sp,
                 color = Color.Gray
             )
+            
+            Spacer(Modifier.height(12.dp))
+            
+            // ✅ Accept Button
+            Button(
+                onClick = onAccept,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)), // Green
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Accept Order", color = Color.White)
+            }
         }
     }
 }

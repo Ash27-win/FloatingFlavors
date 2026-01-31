@@ -83,7 +83,10 @@ fun OrdersSearchBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
+fun AdminOrdersScreen(
+    vm: OrdersViewModel = viewModel(),
+    openOrderId: Int? = null
+) {
     // VM state
     val orders by vm.orders.collectAsState()
     val filteredOrders by vm.filteredOrders.collectAsState()
@@ -166,6 +169,15 @@ fun AdminOrdersScreen(vm: OrdersViewModel = viewModel()) {
 
     // initial load
     LaunchedEffect(Unit) { vm.loadOrders() }
+
+    // 🔥 HANDLE DEEP LINK (Open-once logic)
+    var handledDeepLink by remember { mutableStateOf(false) }
+    LaunchedEffect(openOrderId, orders) {
+        if (openOrderId != null && !handledDeepLink && orders.isNotEmpty()) {
+            vm.loadOrderDetail(openOrderId)
+            handledDeepLink = true
+        }
+    }
 
     // update liveTimes on orders change
     LaunchedEffect(orders) {

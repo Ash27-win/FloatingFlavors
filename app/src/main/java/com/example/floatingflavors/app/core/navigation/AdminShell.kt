@@ -41,6 +41,32 @@ import com.example.floatingflavors.app.core.network.NetworkClient
 fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen.AdminDashboard.route) {
     val navController = rememberNavController()
 
+    // 🔔 NOTIFICATION INTENT HANDLER (Live & Pending)
+    LaunchedEffect(Unit) {
+        // 1. Check Pending (Cold Start)
+        if (com.example.floatingflavors.app.core.navigation.PendingNotification.hasPending()) {
+            val pending = com.example.floatingflavors.app.core.navigation.PendingNotification.consume()
+            pending?.let { (screen, refId) ->
+                 if (screen == "AdminOrderDetails" || screen == "OrderTracking") {
+                     // If refId is needed, navigate with argument
+                     navController.navigate(Screen.AdminOrders.route) 
+                     // TODO: In future pass refId deep to order details
+                 }
+            }
+        }
+        
+        // 2. Check Live Events (Hot Start)
+        com.example.floatingflavors.app.core.service.NotificationEventBus.events.collect { event ->
+            if (event is com.example.floatingflavors.app.core.service.NotificationEvent.Navigate) {
+                 if (event.screen == "AdminOrderDetails" && !event.referenceId.isNullOrEmpty()) {
+                     navController.navigate(Screen.AdminOrders.createRoute(event.referenceId))
+                 } else if (event.screen == "OrderTracking") { // fallback
+                     navController.navigate(Screen.AdminOrders.createRoute()) 
+                 }
+            }
+        }
+    }
+
     Scaffold(
         bottomBar = {
             val back by navController.currentBackStackEntryAsState()
@@ -54,8 +80,8 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
                 )
 
                 NavigationBarItem(
-                    selected = current == Screen.AdminOrders.route,
-                    onClick = { navController.navigate(Screen.AdminOrders.route) { launchSingleTop = true } },
+                    selected = current?.startsWith("admin_orders") == true,
+                    onClick = { navController.navigate(Screen.AdminOrders.createRoute()) { launchSingleTop = true } },
                     icon = { Icon(Icons.Default.ListAlt, contentDescription = "Orders") },
                     label = { Text("Orders") }
                 )
@@ -87,7 +113,18 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
             composable(Screen.AdminDashboard.route) { AdminDashboardScreen() }
 
             // Use the real AdminOrdersScreen (replaces placeholder)
-            composable(Screen.AdminOrders.route) { AdminOrdersScreen() }
+            composable(
+                route = Screen.AdminOrders.route,
+                arguments = listOf(androidx.navigation.navArgument("orderId") {
+                    type = androidx.navigation.NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                })
+            ) { backStackEntry ->
+                // Parse optional arguments
+                val orderIdArg = backStackEntry.arguments?.getString("orderId")
+                AdminOrdersScreen(openOrderId = orderIdArg?.toIntOrNull()) 
+            }
 
             // Menu + Inventory (your existing screen). It expects navController for add/edit navigation.
             composable(Screen.AdminMenuInventory.route) { AdminMenuInventoryScreen(navController = navController) }
@@ -128,7 +165,7 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
                 // async load with error handling
                 LaunchedEffect(Unit) {
                     try {
-                        vm.load(adminId = 1) // change if your admin id is dynamic
+                        vm.load(adminId = com.example.floatingflavors.app.core.UserSession.userId)
                         Log.d("AdminShell", "Requested AdminSettings load")
                     } catch (e: Exception) {
                         Log.e("AdminShell", "Failed to load AdminSettings", e)

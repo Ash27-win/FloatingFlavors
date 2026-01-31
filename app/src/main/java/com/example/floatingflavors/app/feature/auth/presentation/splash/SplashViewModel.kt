@@ -60,6 +60,7 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
                 android.util.Log.d("SPLASH", "Admin/Delivery Detected -> Restore Session")
                 // ✅ For Admin/Delivery: Restore Session & Navigate directly
                 UserSession.userId = userId
+                syncFcmToken() // Sync Token
                 splashEvent = SplashEvent.NavigateToHome(savedRole)
             } else {
                 android.util.Log.d("SPLASH", "User Detected -> Calling getHome")
@@ -72,6 +73,7 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
                         if (data != null) {
                             UserSession.userId = data.userStats.userId
                             tm.saveRole(data.userStats.role) // Refresh role just in case
+                            syncFcmToken() // Sync Token
                             splashEvent = SplashEvent.NavigateToHome(data.userStats.role)
                         } else {
                             splashEvent = SplashEvent.NavigateToLogin
@@ -91,6 +93,32 @@ class SplashViewModel(application: Application) : AndroidViewModel(application) 
                     splashEvent = SplashEvent.NavigateToLogin
                 }
             }
+        }
+    }
+
+    private fun syncFcmToken() {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    android.util.Log.w("SPLASH", "Fetching FCM registration token failed", task.exception)
+                    return@addOnCompleteListener
+                }
+                // Get new FCM registration token
+                val token = task.result
+                android.util.Log.d("SPLASH", "FCM Token: $token")
+                
+                // Send to backend
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        com.example.floatingflavors.app.feature.auth.data.AuthRepository().updateFcmToken(token)
+                        android.util.Log.d("SPLASH", "FCM Token Synced")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

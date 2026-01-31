@@ -63,4 +63,13 @@ class AuthRepository {
             )
         )
     }
+
+    suspend fun updateFcmToken(token: String): SimpleResponseDto {
+        return api.updateFcmToken(
+            com.example.floatingflavors.app.feature.auth.data.remote.dto.UpdateFcmTokenRequest(
+                fcmToken = token,
+                deviceInfo = android.os.Build.MODEL ?: "Unknown Android"
+            )
+        )
+    }
 }

@@ -6,6 +6,7 @@ import com.example.floatingflavors.app.feature.delivery.data.DeliveryRepository
 
 class DeliveryDashboardViewModelFactory(
     private val repository: DeliveryRepository,
+    private val notificationRepository: com.example.floatingflavors.app.feature.notification.data.NotificationRepository,
     private val deliveryPartnerId: Int
 ) : ViewModelProvider.Factory {
 
@@ -14,6 +15,7 @@ class DeliveryDashboardViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return DeliveryDashboardViewModel(
                 repository = repository,
+                notificationRepository = notificationRepository,
                 deliveryPartnerId = deliveryPartnerId
             ) as T
         }
