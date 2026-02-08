@@ -298,10 +298,11 @@ class LocationUpdateService : Service() {
 
                 // Try alternative API
                 try {
-                    NetworkClient.orderTrackingApi.updateOrderLocation(
+                    NetworkClient.orderTrackingApi.updateLiveLocation(
                         orderId = orderId,
                         lat = location.latitude,
-                        lng = location.longitude
+                        lng = location.longitude,
+                        deliveryPartnerId = 1 // Admin Test
                     )
                     val altSuccessMessage = "✅ Location sent via orderTrackingApi"
                     Log.d("ADMIN_GPS", altSuccessMessage)

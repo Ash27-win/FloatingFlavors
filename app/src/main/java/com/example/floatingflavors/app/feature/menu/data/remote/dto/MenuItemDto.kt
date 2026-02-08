@@ -22,6 +22,7 @@ data class MenuItemDto(
     val rating: Float? = null,   // ✅ ADD THIS
     val image_full: String?,  // normalized absolute (from backend)
     val is_available: String?,
+    val stock: String?, // ✅ Added Stock Field (from backend)
     val created_at: String?
 )
 

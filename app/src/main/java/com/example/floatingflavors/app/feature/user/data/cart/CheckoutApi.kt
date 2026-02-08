@@ -23,6 +23,7 @@ data class CheckoutItem(
 
 data class PlaceOrderResponse(
     val success: Boolean,
+    val message: String?, // ✅ Added message
     val order_id: Int?
 )
 

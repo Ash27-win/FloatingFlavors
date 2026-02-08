@@ -104,16 +104,28 @@ class CheckoutViewModel(
                 return@launch
             }
 
-            val res = repo.placeOrder(
-                userId = userId,
-                payment = payment.value,
-                addressId = addressId
-            )
+            try {
+                val res = repo.placeOrder(
+                    userId = userId,
+                    payment = payment.value,
+                    addressId = addressId
+                )
 
-            if (res.isSuccessful && res.body()?.success == true) {
-                _uiState.value = CheckoutUiState.Placed
-            } else {
-                _uiState.value = CheckoutUiState.Error("Order failed")
+                if (res.isSuccessful && res.body()?.success == true) {
+                    _uiState.value = CheckoutUiState.Placed
+                } else {
+                    // 🔥 HANDLE STOCK ERROR (Dynamic Logic)
+                    val errorBody = res.errorBody()?.string()
+                    val msg = res.body()?.message ?: errorBody ?: "Order failed"
+                    
+                    if (msg.contains("Insufficient stock", ignoreCase = true) || msg.contains("stock for item", true)) {
+                        _uiState.value = CheckoutUiState.Error("⚠️ Stock Issue: $msg.\nPlease remove unavailable items.")
+                    } else {
+                        _uiState.value = CheckoutUiState.Error("Failed: $msg")
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = CheckoutUiState.Error("Network Error: ${e.message}")
             }
         }
     }

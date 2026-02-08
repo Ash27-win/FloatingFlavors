@@ -102,6 +102,10 @@ object NetworkClient {
     // inside object NetworkClient (near other api fields)
     val adminSettingsApi: AdminSettingsApi by lazy { retrofit.create(AdminSettingsApi::class.java) }
 
+    val adminApi: com.example.floatingflavors.app.feature.admin.data.remote.AdminApi by lazy {
+        retrofit.create(com.example.floatingflavors.app.feature.admin.data.remote.AdminApi::class.java)
+    }
+
     // User Home Screen API
     val homeApi: HomeApi by lazy {
         retrofit.create(HomeApi::class.java)

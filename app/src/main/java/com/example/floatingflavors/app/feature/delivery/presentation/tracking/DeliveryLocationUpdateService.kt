@@ -232,7 +232,7 @@ class DeliveryLocationUpdateService : Service() {
                         )
 
                         // Priority 2: Backend Sync
-                        NetworkClient.deliveryLocationApi.updateLocation(
+                        NetworkClient.deliveryApi.updateLiveLocation(
                             orderId = orderId,
                             lat = loc.latitude,
                             lng = loc.longitude,

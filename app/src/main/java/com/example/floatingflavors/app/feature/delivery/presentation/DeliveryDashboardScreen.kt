@@ -32,6 +32,7 @@ fun DeliveryDashboardScreen(
     }
 
     val state by viewModel.state.collectAsState()
+    val earnings by viewModel.earnings.collectAsState()
     val unreadCount by viewModel.unreadCount.collectAsState()
 
     LazyColumn(
@@ -53,8 +54,8 @@ fun DeliveryDashboardScreen(
 
         item {
             StatsRow(
-                earnings = "₹85.50",
-                trips = state?.upcomingOrders?.size?.toString() ?: "0"
+                earnings = earnings?.let { "₹${it.total_earnings.toInt()}" } ?: "₹0",
+                trips = earnings?.total_deliveries?.toString() ?: "0"
             )
         }
 

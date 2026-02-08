@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -239,30 +240,73 @@ private fun MenuGridCard(
             else -> null
         }
 
+    // 🔥 STOCK LOGIC
+    val stock = item.stock?.toIntOrNull() ?: 10 // Default safe
+    val isAvailable = (item.is_available?.toIntOrNull() ?: 1) == 1
+    val isSoldOut = stock <= 0 || !isAvailable
+    val isLowStock = !isSoldOut && stock <= 5
+
     Column(
         Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .clickable { onClick() }
+            .background(if (isSoldOut) Color(0xFFF5F5F5) else Color.White) // Dim background if sold out
+            .clickable(enabled = !isSoldOut) { onClick() } // Disable click if sold out
             .padding(10.dp)
+            .alpha(if (isSoldOut) 0.6f else 1f) // Alpha fade
     ) {
 
-        // ✅ MENU GRID IMAGE (FIGMA SAFE)
-        AsyncImage(
-            model = fullImageUrl,
-            contentDescription = item.name,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFE0E0E0)),
-            contentScale = ContentScale.Crop
-        )
+        Box {
+            // ✅ MENU GRID IMAGE (FIGMA SAFE)
+            AsyncImage(
+                model = fullImageUrl,
+                contentDescription = item.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFE0E0E0)),
+                contentScale = ContentScale.Crop,
+                colorFilter = if (isSoldOut) androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                    androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) } // Grayscale
+                ) else null
+            )
+
+            // 🔥 SOLD OUT OVERLAY
+            if (isSoldOut) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.4f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "SOLD OUT",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
 
         Spacer(Modifier.height(8.dp))
 
         Text(item.name ?: "-", fontWeight = FontWeight.Bold)
-        Text(item.category ?: "", fontSize = 12.sp, color = Color.Gray)
+        
+        // 🔥 LOW STOCK ALERT
+        if (isLowStock) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "🔥 Only $stock Left!",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFF3D00)
+            )
+        } else {
+             Text(item.category ?: "", fontSize = 12.sp, color = Color.Gray)
+        }
 
         Spacer(Modifier.height(6.dp))
 
@@ -271,12 +315,24 @@ private fun MenuGridCard(
             Text(
                 "₹${item.price ?: 0}",
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF00A86B)
+                color = if (isSoldOut) Color.Gray else Color(0xFF00A86B)
             )
 
             Spacer(Modifier.weight(1f))
 
-            if (quantity == 0) {
+            if (isSoldOut) {
+                 // 🔒 DISABLED BUTTON
+                 Box(
+                    Modifier
+                        .height(32.dp)
+                        .padding(horizontal = 12.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Sold Out", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            } else if (quantity == 0) {
                 Box(
                     Modifier
                         .height(32.dp)
@@ -307,11 +363,15 @@ private fun MenuGridCard(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
+                    // limit increase if hits stock? (Optional, but "Low Stock" warns them)
                     Text(
                         "+",
                         color = Color.White,
                         fontSize = 20.sp,
-                        modifier = Modifier.clickable { onIncrease() }
+                        modifier = Modifier.clickable { 
+                            if (quantity < stock) onIncrease() 
+                            // else showToast("Max stock reached") - simplicity first
+                        }
                     )
                 }
             }

@@ -325,17 +325,23 @@ fun AdminMenuItemCard(
                 Spacer(Modifier.height(8.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val stockCount = item.is_available?.toIntOrNull() ?: 8
+                    // 🔥 STOCK DISPLAY
+                    val stockCount = item.stock?.toIntOrNull() ?: 10 // Backend value
+                    
                     Text(
                         text = "Stock: $stockCount",
                         fontSize = 12.sp,
-                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        color = if (stockCount <= 5) Color.Red else Color.Black,
                         modifier = Modifier
-                            .background(Color(0xFFE0E0E0), RoundedCornerShape(4.dp))
+                            .background(
+                                if (stockCount <= 5) Color(0xFFFFEBEE) else Color(0xFFE0E0E0), 
+                                RoundedCornerShape(4.dp)
+                            )
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
 
-                    if (stockCount < 5) {
+                    if (stockCount <= 5) {
                         Spacer(Modifier.width(8.dp))
                         Icon(Icons.Default.Warning, contentDescription = "Low Stock", tint = Color.Red, modifier = Modifier.size(16.dp))
                     }

@@ -146,6 +146,7 @@ fun AdminAddFoodScreen(
                         description = description.trim(),
                         price = priceDouble,
                         category = category.trim().ifEmpty { "General" },
+                        stock = initialStock.toIntOrNull() ?: 0, // ✅ Pass Stock (default 0)
                         imageFile = imageFile,
                         onSuccess = {
                             // notify previous screen

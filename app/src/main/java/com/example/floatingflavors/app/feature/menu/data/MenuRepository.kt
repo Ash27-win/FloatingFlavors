@@ -22,6 +22,7 @@ class MenuRepository {
         description: String,
         price: Double,
         category: String,
+        stock: Int, // ✅ Added Stock
         isAvailable: Int = 1,
         imageFile: File? = null
     ): SimpleResponseDto {
@@ -29,6 +30,7 @@ class MenuRepository {
         val descRb = description.toRequestBody("text/plain".toMediaTypeOrNull())
         val priceRb = price.toString().toRequestBody("text/plain".toMediaTypeOrNull())
         val catRb = category.toRequestBody("text/plain".toMediaTypeOrNull())
+        val stockRb = stock.toString().toRequestBody("text/plain".toMediaTypeOrNull()) // ✅ Stock RB
         val availRb = isAvailable.toString().toRequestBody("text/plain".toMediaTypeOrNull())
 
         val imagePart = imageFile?.let { file ->
@@ -37,7 +39,7 @@ class MenuRepository {
             MultipartBody.Part.createFormData("image", file.name, reqFile)
         }
 
-        return api.addMenuItemWithImage(nameRb, descRb, priceRb, catRb, availRb, imagePart)
+        return api.addMenuItemWithImage(nameRb, descRb, priceRb, catRb, stockRb, availRb, imagePart)
     }
 
     // EDIT / UPDATE (with optional image)
@@ -47,6 +49,7 @@ class MenuRepository {
         description: String?,
         price: Double?,
         category: String?,
+        stock: Int?, // ✅ Added Stock
         isAvailable: Int?,
         imageFile: File? = null
     ): SimpleResponseDto {
@@ -58,6 +61,7 @@ class MenuRepository {
         val descRb = description?.toRb()
         val priceRb = price?.toString()?.toRb()
         val catRb = category?.toRb()
+        val stockRb = stock?.toString()?.toRb() // ✅ Stock RB
         val availRb = isAvailable?.toString()?.toRb()
 
         val imagePart: MultipartBody.Part? = imageFile?.let { file ->
@@ -72,6 +76,7 @@ class MenuRepository {
             description = descRb,
             price = priceRb,
             category = catRb,
+            stock = stockRb, // ✅ Pass stock
             isAvailable = availRb,
             image = imagePart
         )

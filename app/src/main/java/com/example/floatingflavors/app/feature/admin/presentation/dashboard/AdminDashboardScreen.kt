@@ -28,6 +28,7 @@ fun AdminDashboardScreen(
     onNotificationClick: () -> Unit = {}
 ) {
     val counts by viewModel.counts.collectAsState()
+    val analytics by viewModel.analytics.collectAsState()
     val unreadCount by viewModel.unreadCount.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -43,7 +44,7 @@ fun AdminDashboardScreen(
     ) {
         Header(unreadCount = unreadCount, onNotificationClick = onNotificationClick)
         Spacer(Modifier.height(12.dp))
-        MetricsSection(counts = counts)
+        MetricsSection(counts = counts, analytics = analytics)
         Spacer(Modifier.height(12.dp))
         AIInsightsSection()
         Spacer(Modifier.height(12.dp))
@@ -110,7 +111,10 @@ private fun Header(unreadCount: Int = 0, onNotificationClick: () -> Unit) {
 }
 
 @Composable
-private fun MetricsSection(counts: com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCounts?) {
+private fun MetricsSection(
+    counts: com.example.floatingflavors.app.feature.order.data.remote.dto.OrdersCounts?,
+    analytics: com.example.floatingflavors.app.feature.admin.data.remote.AnalyticsDataDto?
+) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
@@ -124,10 +128,10 @@ private fun MetricsSection(counts: com.example.floatingflavors.app.feature.order
                 caption = "All Time", 
                 modifier = Modifier.weight(1f)
             )
-            // REVENUE (Placeholder - Needs specific API)
+            // REVENUE (From Analytics API)
             MetricCard(
                 bg = Color(0xFF00C853), 
-                value = "₹ --", 
+                value = "₹${analytics?.total_revenue?.toInt() ?: "--"}", 
                 title = "Total Revenue", 
                 caption = "Revenue", 
                 modifier = Modifier.weight(1f)

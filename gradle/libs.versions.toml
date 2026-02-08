@@ -31,6 +31,7 @@ animationCore = "1.10.0"
 playServicesLocation = "21.3.0"
 runtimeSaveable = "1.10.1"
 androidxFoundation = "1.10.1"
+uiGraphics = "1.10.2"
 
 
 #composeUi = "1.9.5"
@@ -69,6 +70,7 @@ androidx-compose-animation-core = { group = "androidx.compose.animation", name =
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" }
 foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "androidxFoundation" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
 
 
 #androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "composeUi" }

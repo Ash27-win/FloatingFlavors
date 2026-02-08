@@ -57,9 +57,21 @@ interface DeliveryApi {
     suspend fun acceptOrder(
         @Field("order_id") orderId: Int,
         @Field("delivery_partner_id") deliveryPartnerId: Int
-    ): ApiResponse<Unit>
+    ): SimpleResponseDto
 
+    @GET("get_driver_earnings.php")
+    suspend fun getDriverEarnings(
+        @Query("driver_id") driverId: Int,
+        @Query("period") period: String = "all"
+    ): DriverEarningsResponse
 }
+
+data class DriverEarningsResponse(
+    val success: Boolean,
+    val driver_id: Int,
+    val total_deliveries: Int,
+    val total_earnings: Double
+)
 
 // Response data classes
 data class DeliveryOrderDetailsResponse(

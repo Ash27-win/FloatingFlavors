@@ -2,6 +2,7 @@ package com.example.floatingflavors.app.feature.delivery.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.delivery.data.DeliveryDashboardState
 import com.example.floatingflavors.app.feature.delivery.data.DeliveryRepository
 import com.example.floatingflavors.app.feature.delivery.data.OrderDto
@@ -26,11 +27,15 @@ class DeliveryDashboardViewModel(
     val unreadCount: StateFlow<Int> = notificationRepository.unreadCount
         .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), 0)
 
+    private val _earnings = MutableStateFlow<com.example.floatingflavors.app.feature.delivery.data.remote.DriverEarningsResponse?>(null)
+    val earnings: StateFlow<com.example.floatingflavors.app.feature.delivery.data.remote.DriverEarningsResponse?> = _earnings
+
     fun loadDashboard() {
         viewModelScope.launch {
             // Also refresh notifications when dashboard loads
             launch { notificationRepository.refreshNotifications() }
             
+            // Fetch Dashboard
             val response = repository.getDashboard(deliveryPartnerId)
 
             if (response.success) {
@@ -42,8 +47,8 @@ class DeliveryDashboardViewModel(
                         OrderDto(
                             id = it.id?.toIntOrNull() ?: 0,
                             customerName = it.customerName ?: "",
-                            customerPhone = it.customerPhone, // ✅ NOW EXISTS
-                            pickupAddress = "", // Usually dashboard active order doesn't show full address details in list, but could
+                            customerPhone = it.customerPhone,
+                            pickupAddress = "", 
                             dropAddress = "",
                             amount = it.amount?.toIntOrNull() ?: 0,
                             status = it.status
@@ -63,6 +68,16 @@ class DeliveryDashboardViewModel(
                         )
                     } ?: emptyList()
                 )
+            }
+            
+            // ✅ Fetch Earnings
+            try {
+                val earningRes = NetworkClient.deliveryApi.getDriverEarnings(deliveryPartnerId)
+                if (earningRes.success) {
+                    _earnings.value = earningRes
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

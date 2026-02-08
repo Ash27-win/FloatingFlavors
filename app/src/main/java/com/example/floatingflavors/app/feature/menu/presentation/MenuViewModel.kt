@@ -60,6 +60,7 @@ class MenuViewModel(
         description: String,
         price: Double,
         category: String,
+        stock: Int, // ✅ Added Stock
         imageFile: File?,
         onSuccess: (() -> Unit)? = null
     ) {
@@ -72,6 +73,7 @@ class MenuViewModel(
                     description = description,
                     price = price,
                     category = category,
+                    stock = stock, // ✅ Pass Stock
                     isAvailable = 1,
                     imageFile = imageFile
                 )
@@ -155,6 +157,7 @@ class MenuViewModel(
         description: String?,
         price: Double?,
         category: String?,
+        stock: Int?, // ✅ Added Stock
         isAvailable: Int?,
         imageFile: File? = null
     ) {
@@ -168,6 +171,7 @@ class MenuViewModel(
                     description = description,
                     price = price,
                     category = category,
+                    stock = stock, // ✅ Pass Stock
                     isAvailable = isAvailable,
                     imageFile = imageFile
                 )

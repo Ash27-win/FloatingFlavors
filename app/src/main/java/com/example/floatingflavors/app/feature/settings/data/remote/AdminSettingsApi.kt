@@ -14,7 +14,7 @@ interface AdminSettingsApi {
         @Query("admin_id") adminId: Int
     ): ApiResponse<AdminSettingsDto>
 
-    @POST("update_admin_settings.php")
+    @POST("update_admin_profile.php")
     suspend fun updateSettings(
         @Body req: UpdateAdminSettingsRequest
     ): ApiResponse<Unit>

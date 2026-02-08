@@ -59,6 +59,7 @@ interface MenuApi {
         @Part("description") description: RequestBody,
         @Part("price") price: RequestBody,
         @Part("category") category: RequestBody,
+        @Part("stock") stock: RequestBody, // ✅ Added Stock
         @Part("is_available") isAvailable: RequestBody,
         @Part image: MultipartBody.Part? // optional
     ): SimpleResponseDto
@@ -72,6 +73,7 @@ interface MenuApi {
         @Part("description") description: RequestBody?,
         @Part("price") price: RequestBody?,
         @Part("category") category: RequestBody?,
+        @Part("stock") stock: RequestBody?, // ✅ Added Stock
         @Part("is_available") isAvailable: RequestBody?, // use this form name; Kotlin param is isAvailable
         @Part image: MultipartBody.Part? // optional
     ): SimpleResponseDto

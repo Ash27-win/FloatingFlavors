@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.compose.runtime.saveable)
     implementation(libs.foundation)
+    implementation(libs.androidx.compose.ui.graphics)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

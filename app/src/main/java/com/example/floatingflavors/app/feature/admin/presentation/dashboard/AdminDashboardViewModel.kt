@@ -30,6 +30,9 @@ class AdminDashboardViewModel(application: Application) : AndroidViewModel(appli
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _analytics = MutableStateFlow<com.example.floatingflavors.app.feature.admin.data.remote.AnalyticsDataDto?>(null)
+    val analytics: StateFlow<com.example.floatingflavors.app.feature.admin.data.remote.AnalyticsDataDto?> = _analytics
+
     fun loadCounts() {
         viewModelScope.launch {
             // Also refresh notifications when dashboard loads
@@ -37,15 +40,23 @@ class AdminDashboardViewModel(application: Application) : AndroidViewModel(appli
             
             _isLoading.value = true
             try {
-                // Call the API
-                val response = NetworkClient.ordersApi.getOrdersCounts()
-                
-                if (response.success && response.data != null) {
-                    _counts.value = response.data
+                // 1. Fetch Order Counts (Breakdown)
+                val responseCounts = NetworkClient.ordersApi.getOrdersCounts()
+                if (responseCounts.success && responseCounts.data != null) {
+                    _counts.value = responseCounts.data
                 }
+
+                // 2. Fetch Analytics (Revenue, etc.)
+                // Use runCatching to ensure one failure doesn't block the other
+                runCatching {
+                    val responseAnalytics = NetworkClient.adminApi.getAnalytics()
+                    if (responseAnalytics.success) {
+                        _analytics.value = responseAnalytics.data
+                    }
+                }.onFailure { it.printStackTrace() }
+
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Handle error if needed
             } finally {
                 _isLoading.value = false
             }

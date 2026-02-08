@@ -31,7 +31,6 @@ import com.example.floatingflavors.app.feature.admin.presentation.order.BookingD
 import com.example.floatingflavors.app.feature.admin.presentation.order.OrderDetailDialog
 import com.example.floatingflavors.app.feature.admin.presentation.order.RejectReasonDialog // Add this import
 import com.example.floatingflavors.app.feature.admin.presentation.tracking.AdminPermissionHandler
-import com.example.floatingflavors.app.feature.admin.presentation.tracking.service.LocationUpdateService
 import com.example.floatingflavors.app.feature.orders.data.remote.dto.OrderDto
 import com.example.floatingflavors.app.feature.orders.presentation.OrdersViewModel
 import com.example.floatingflavors.app.feature.order.component.OrderListCard
@@ -366,13 +365,7 @@ fun AdminOrdersScreen(
                         // vm.clearSelectedOrder() // REMOVE THIS LINE
                     },
                     onMarkDelivered = { orderId ->
-                        context.stopService(
-                            Intent(
-                                context,
-                                LocationUpdateService::class.java
-                            )
-                        )
-
+                        // Removed LocationUpdateService stop logic as it is a testing feature
                         vm.updateStatusFromDialog(orderId, "completed") { success, err ->
                             coroutineScope.launch {
                                 if (success) {

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -94,10 +95,10 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
                 )
 
                 NavigationBarItem(
-                    selected = current == Screen.AdminNotifications.route,
-                    onClick = { navController.navigate(Screen.AdminNotifications.route) { launchSingleTop = true } },
-                    icon = { Icon(Icons.Default.Notifications, contentDescription = "Notifications") },
-                    label = { Text("Alerts") }
+                    selected = current == Screen.AdminUserList.route,
+                    onClick = { navController.navigate(Screen.AdminUserList.route) { launchSingleTop = true } },
+                    icon = { Icon(Icons.Default.Group, contentDescription = "Users") },
+                    label = { Text("Users") }
                 )
 
                 NavigationBarItem(
@@ -110,7 +111,11 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
         }
     ) { innerPadding ->
         NavHost(navController = navController, startDestination = startRoute, modifier = Modifier.padding(innerPadding)) {
-            composable(Screen.AdminDashboard.route) { AdminDashboardScreen() }
+            composable(Screen.AdminDashboard.route) { 
+                AdminDashboardScreen(
+                    onNotificationClick = { navController.navigate(Screen.AdminNotifications.route) }
+                ) 
+            }
 
             // Use the real AdminOrdersScreen (replaces placeholder)
             composable(
@@ -143,6 +148,17 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
             // Notifications route
             composable(Screen.AdminNotifications.route) {
                 AdminNotificationScreen()
+            }
+            
+            // [NEW] User/Delivery List
+            composable(Screen.AdminUserList.route) {
+                com.example.floatingflavors.app.feature.admin.presentation.users.AdminUserListScreen(navController)
+            }
+            
+            // [NEW] User Details
+            composable("admin_user_details/{userId}") { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: "0"
+                com.example.floatingflavors.app.feature.admin.presentation.users.AdminUserDetailsScreen(navController, userId)
             }
 
             // Profile route — create repo + vm + screen

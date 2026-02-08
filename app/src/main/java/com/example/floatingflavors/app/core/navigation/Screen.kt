@@ -30,8 +30,12 @@ sealed class Screen(val route: String) {
         // helper to build concrete route
         fun createRoute(id: String) = "admin_edit_food/$id"
     }
-    object AdminNotifications : Screen("admin_notifications")   // <-- new
-    object AdminProfile : Screen("admin_profile")               // <-- new
+    object AdminNotifications : Screen("admin_notifications")
+    object AdminUserList : Screen("admin_user_list") // [NEW] Users/Delivery List
+    object AdminUserDetails : Screen("admin_user_details/{userId}") {
+        fun createRoute(userId: String) = "admin_user_details/$userId"
+    }
+    object AdminProfile : Screen("admin_profile")
 
     // User inner screens
     object UserHome : Screen("user_home")

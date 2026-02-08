@@ -70,6 +70,7 @@ fun AdminEditFoodScreen(
     var tmpCategory by remember { mutableStateOf("") }
     var tmpDescription by remember { mutableStateOf("") }
     var tmpPrice by remember { mutableStateOf("") }
+    var tmpStock by remember { mutableStateOf("") } // ✅ Track Stock
     var tmpAvailable by remember { mutableStateOf(true) }
     var currentImageUrl by remember { mutableStateOf<String?>(null) }
 
@@ -81,6 +82,7 @@ fun AdminEditFoodScreen(
             if (tmpCategory.isBlank()) tmpCategory = it.category ?: ""
             if (tmpDescription.isBlank()) tmpDescription = it.description ?: ""
             if (tmpPrice.isBlank()) tmpPrice = it.price ?: ""
+            if (tmpStock.isBlank()) tmpStock = it.stock ?: "" // ✅ Init Stock
             tmpAvailable = (it.is_available?.toIntOrNull() ?: 0) == 1
             if (currentImageUrl.isNullOrBlank()) currentImageUrl = it.image_full ?: it.image_url
         }
@@ -131,6 +133,8 @@ fun AdminEditFoodScreen(
                 Button(
                     onClick = {
                         val priceDouble = tmpPrice.toDoubleOrNull()
+                        val stockInt = tmpStock.toIntOrNull() ?: 0 // ✅
+                        
                         coroutineScope.launch {
                             vm.editMenuItem(
                                 id = itemId,
@@ -138,6 +142,7 @@ fun AdminEditFoodScreen(
                                 description = tmpDescription.takeIf { it.isNotBlank() },
                                 price = priceDouble,
                                 category = tmpCategory.takeIf { it.isNotBlank() },
+                                stock = stockInt, // ✅ Pass Stock
                                 isAvailable = if (tmpAvailable) 1 else 0,
                                 imageFile = pickedFile
                             )
@@ -226,18 +231,19 @@ fun AdminEditFoodScreen(
                 OutlinedTextField(
                     value = tmpPrice,
                     onValueChange = { s -> tmpPrice = s.filter { ch -> ch.isDigit() || ch == '.' } },
-                    label = { Text("Price") },
-                    modifier = Modifier.weight(1f)
+                    label = { Text("Price (₹)") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
                 )
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Stock", fontWeight = FontWeight.SemiBold)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("-", modifier = Modifier.padding(8.dp))
-                        Text("25", modifier = Modifier.padding(horizontal = 6.dp))
-                        Text("+", modifier = Modifier.padding(8.dp))
-                    }
-                }
+                // 🔥 STOCK EDIT
+                OutlinedTextField(
+                    value = tmpStock,
+                    onValueChange = { s -> tmpStock = s.filter { ch -> ch.isDigit() } },
+                    label = { Text("Stock") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

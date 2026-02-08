@@ -4,6 +4,8 @@
 <!-- res/values/styles.xml (or themes.xml) -->
 <resources>
     <style name="Theme.FloatingFlavors" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowSplashScreenBackground">@color/white</item>
         <!-- Optional: status bar / nav bar colors etc later -->
     </style>
 </resources>

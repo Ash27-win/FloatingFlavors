@@ -29,7 +29,7 @@ class DeliveryRepository(
     suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto {
         val res = api.acceptOrder(orderId, deliveryPartnerId)
         return SimpleResponseDto(
-            success = res.status,
+            success = res.success,
             message = res.message
         )
     }
