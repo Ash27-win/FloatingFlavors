@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.floatingflavors.app.core.network.NetworkClient
@@ -79,6 +81,7 @@ fun AdminMenuInventoryScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag(TestTags.ADMIN_INVENTORY_SCREEN)
                 .padding(padding),
             contentPadding = PaddingValues(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)

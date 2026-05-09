@@ -36,7 +36,9 @@ class OrderTrackingViewModel : ViewModel() {
 
             // ✅ USER DESTINATION (FROM ORDER ADDRESS)
             response.deliveryAddress.let {
-                _destination.value = GeoPoint(it.latitude, it.longitude)
+                val lat = it.latitude ?: 0.0
+                val lng = it.longitude ?: 0.0
+                _destination.value = GeoPoint(lat, lng)
             }
 
             if (response.currentStatus == "OUT_FOR_DELIVERY") {

@@ -18,6 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import com.example.floatingflavors.app.feature.auth.presentation.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +41,7 @@ fun RegisterScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.REGISTER_SCREEN)
             .background(Color(0xFFE8FFD1))
             .padding(top = 16.dp)
     ) {
@@ -170,6 +173,7 @@ fun RegisterScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag(TestTags.REGISTER_BUTTON)
                         .height(44.dp),
                     shape = RoundedCornerShape(50),
                     enabled = !isLoading

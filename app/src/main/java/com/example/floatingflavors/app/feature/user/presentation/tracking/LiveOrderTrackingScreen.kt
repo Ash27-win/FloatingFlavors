@@ -155,7 +155,7 @@ fun LiveOrderTrackingScreen(
                         color = Color(0xFF666666)
                     )
                     Text(
-                        data.eventInfo.title,
+                        data.eventInfo.title ?: "Unknown",
                         fontSize = bodyFontSize,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black
@@ -177,7 +177,7 @@ fun LiveOrderTrackingScreen(
                         color = Color(0xFF666666)
                     )
                     Text(
-                        formatDate(data.eventInfo.date),
+                        formatDate(data.eventInfo.date ?: ""),
                         fontSize = bodyFontSize,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black
@@ -580,8 +580,9 @@ fun LiveOrderTrackingScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Split address into lines
-                val addressParts = data.deliveryAddress.line1.split(",")
+                // Split address into lines safely
+                val addressText = data.deliveryAddress.line1 ?: "Address not available"
+                val addressParts = addressText.split(",")
                 addressParts.forEachIndexed { index, part ->
                     Text(
                         part.trim(),

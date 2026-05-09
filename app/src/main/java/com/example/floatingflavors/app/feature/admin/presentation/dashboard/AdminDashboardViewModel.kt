@@ -37,7 +37,7 @@ class AdminDashboardViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             // Also refresh notifications when dashboard loads
             launch { notificationRepository.refreshNotifications() }
-            
+
             _isLoading.value = true
             try {
                 // 1. Fetch Order Counts (Breakdown)

@@ -41,6 +41,7 @@ import com.example.floatingflavors.app.core.network.NetworkClient
 @Composable
 fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen.AdminDashboard.route) {
     val navController = rememberNavController()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     // 🔔 NOTIFICATION INTENT HANDLER (Live & Pending)
     LaunchedEffect(Unit) {
@@ -192,6 +193,9 @@ fun AdminShell(rootNavController: NavHostController, startRoute: String = Screen
                     viewModel = vm,
                     rootNavController = rootNavController,
                     onSignOut = {
+                        // Clear session so Splash screen doesn't auto-login again
+                        com.example.floatingflavors.app.core.auth.TokenManager.get(context).clearTokens()
+                        
                         rootNavController.navigate(Screen.Login.route) {
                             popUpTo(Screen.AdminRoot.route) {
                                 inclusive = true

@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import com.example.floatingflavors.R
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 
 @Composable
 fun SplashScreen(
@@ -43,6 +45,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.SPLASH_SCREEN)
             .background(Color.White),
         contentAlignment = Alignment.Center
     ) {

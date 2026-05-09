@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminApi
 import com.example.floatingflavors.app.feature.admin.data.remote.AdminRepository
 import com.example.floatingflavors.app.feature.admin.data.remote.UserDto
@@ -64,6 +66,7 @@ fun AdminUserListScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag(TestTags.ADMIN_USERS_SCREEN),
         topBar = {
             Column(
                 modifier = Modifier
@@ -117,6 +120,7 @@ fun AdminUserListScreen(
                 placeholder = { Text("Search by name or email...") },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .testTag("user_search_field")
                     .padding(16.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .border(0.dp, Color.Transparent),

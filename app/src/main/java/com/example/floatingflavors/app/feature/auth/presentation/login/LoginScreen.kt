@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import com.example.floatingflavors.app.feature.auth.presentation.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +47,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.LOGIN_SCREEN)
             .background(Color(0xFFE8FFD1))
             .padding(top = 16.dp)
     ) {
@@ -103,7 +106,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_EMAIL_FIELD),
                     placeholder = {
                         Text(
                             if (selectedRole == "Delivery")
@@ -123,7 +126,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag(TestTags.LOGIN_PASSWORD_FIELD),
                     placeholder = { Text("Enter your password") },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation()
@@ -202,6 +205,7 @@ fun LoginScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag(TestTags.LOGIN_BUTTON)
                         .height(44.dp),
                     shape = RoundedCornerShape(50),
                     enabled = !isLoading

@@ -131,18 +131,18 @@ fun UserShell(
                 }
             }
         }
-        
+
         // 2. Live Events (Foreground)
         com.example.floatingflavors.app.core.service.NotificationEventBus.events.collect { event ->
             if (event is com.example.floatingflavors.app.core.service.NotificationEvent.Navigate) {
-                 val screen = event.screen
-                 val refId = event.referenceId
-                 Log.d("USER_SHELL", "Handling Live Event: $screen ref=$refId")
-                 if (screen == "OrderTrackingScreen") {
-                     navController.navigate("user_order_tracking/$refId/INDIVIDUAL")
-                 } else if (screen == "UserOrderDetails") {
-                     navController.navigate(Screen.UserOrderDetails.createRoute(refId ?: ""))
-                 }
+                val screen = event.screen
+                val refId = event.referenceId
+                Log.d("USER_SHELL", "Handling Live Event: $screen ref=$refId")
+                if (screen == "OrderTrackingScreen") {
+                    navController.navigate("user_order_tracking/$refId/INDIVIDUAL")
+                } else if (screen == "UserOrderDetails") {
+                    navController.navigate(Screen.UserOrderDetails.createRoute(refId ?: ""))
+                }
             }
         }
     }

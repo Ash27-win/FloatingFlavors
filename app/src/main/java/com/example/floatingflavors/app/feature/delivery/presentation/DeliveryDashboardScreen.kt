@@ -12,6 +12,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.floatingflavors.app.feature.delivery.presentation.components.*
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 
 @Composable
 fun DeliveryDashboardScreen(
@@ -38,6 +40,7 @@ fun DeliveryDashboardScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.DELIVERY_DASHBOARD_SCREEN)
             .background(Color(0xFFF8F7F6)),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)

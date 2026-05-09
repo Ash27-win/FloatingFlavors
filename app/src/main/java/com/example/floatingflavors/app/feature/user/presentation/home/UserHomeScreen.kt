@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.floatingflavors.app.core.network.NetworkClient
@@ -70,6 +72,7 @@ fun UserHomeScreen(
      var showChat by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = Modifier.testTag(TestTags.USER_HOME_SCREEN),
         containerColor = pageBg,
         topBar = {
             // Simple custom top bar (Material3 TopAppBar can be used, but this is safe)
@@ -170,6 +173,7 @@ fun UserHomeScreen(
                 contentColor = Color.White,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .testTag(TestTags.CHAT_FAB)
                     .padding(20.dp)
             ) {
                 Icon(
@@ -224,7 +228,7 @@ private fun UserHomeContent(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = onBrowseMenu,
-                    modifier = Modifier.weight(1f).height(50.dp),
+                    modifier = Modifier.weight(1f).height(50.dp).testTag(TestTags.BROWSE_MENU_BUTTON),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B14F)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -235,7 +239,7 @@ private fun UserHomeContent(
 
                 OutlinedButton(
                     onClick = onBookingCatering,
-                    modifier = Modifier.weight(1f).height(50.dp),
+                    modifier = Modifier.weight(1f).height(50.dp).testTag(TestTags.BOOK_NOW_BUTTON),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(imageVector = Icons.Default.CalendarToday, contentDescription = "Booking")

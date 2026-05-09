@@ -13,21 +13,21 @@ class ChatRepository(
     suspend fun sendMessage(
         userId: Int,
         message: String
-    ): ChatBotResponse {
-
-        // Save user message
+    ): Result<ChatBotResponse> = runCatching {
+        // Save user message to local DB
         dao.insert(ChatEntity(text = message, isUser = true))
 
         val response = api.sendMessage(
             ChatRequest(user_id = userId, message = message)
         )
 
-        // Save bot text ONLY if reply exists
-        response.reply?.let {
+        // Save bot text ONLY if reply or message exists
+        val botText = response.reply ?: response.message
+        botText?.let {
             dao.insert(ChatEntity(text = it, isUser = false))
         }
 
-        return response
+        response
     }
 
     suspend fun getMessages() = dao.getAll()

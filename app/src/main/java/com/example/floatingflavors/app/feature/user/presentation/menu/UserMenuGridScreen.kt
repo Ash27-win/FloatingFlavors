@@ -20,6 +20,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.floatingflavors.app.feature.menu.data.remote.dto.MenuItemDto
@@ -52,7 +54,7 @@ fun UserMenuGridScreen(
         cartVm.loadCart(userId)
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().testTag(TestTags.USER_MENU_SCREEN)) {
 
         Column(
             Modifier
@@ -72,7 +74,7 @@ fun UserMenuGridScreen(
                     Text("Browse our delicious offerings", fontSize = 13.sp, color = Color.Gray)
                 }
 
-                Box(Modifier.clickable { showCart = true }) {
+                Box(Modifier.clickable { showCart = true }.testTag("cart_icon_button")) {
                     Icon(Icons.Default.ShoppingCart, null, Modifier.size(28.dp))
 
                     if (cartBadgeCount > 0) {

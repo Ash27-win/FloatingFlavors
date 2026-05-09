@@ -19,6 +19,13 @@ import com.example.floatingflavors.app.feature.delivery.data.DeliveryRepository
 import com.example.floatingflavors.app.feature.delivery.data.DeliveryTrackingRepository
 import com.example.floatingflavors.app.feature.delivery.presentation.*
 import com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryTrackingViewModel
+import com.example.floatingflavors.app.chatbot.ChatRepository
+import com.example.floatingflavors.app.chatbot.ChatScreen
+import com.example.floatingflavors.app.chatbot.model.ChatViewModel
+import com.example.floatingflavors.app.chatbot.data.ChatDatabase
+import com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliveryVehicleViewModel
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.animation.*
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -29,6 +36,18 @@ fun DeliveryShell(
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+
+    // ✅ CHAT SETUP
+    val context = LocalContext.current
+    val chatDao = remember { ChatDatabase.getInstance(context).chatDao() }
+    val chatViewModel = remember {
+        ChatViewModel(
+            ChatRepository(
+                api = NetworkClient.chatApi,
+                dao = chatDao
+            )
+        )
+    }
 
     // 🔔 NOTIFICATION INTENT HANDLER
     LaunchedEffect(Unit) {
@@ -216,21 +235,98 @@ fun DeliveryShell(
 
             /* ---------------- PROFILE ---------------- */
 
+            /* ---------------- PROFILE ---------------- */
+
             composable(Screen.DeliveryProfile.route) {
-                // Get context for logout
                 val context = androidx.compose.ui.platform.LocalContext.current
+                // Use a shared ViewModel or scoped one if possible, but for now specific per screen
+                val vm: com.example.floatingflavors.app.feature.delivery.presentation.profile.DeliveryProfileViewModel = viewModel()
 
                 DeliveryProfileScreen(
+                    viewModel = vm,
+                    onEditProfile = {
+                        navController.navigate(Screen.DeliveryEditProfile.route)
+                    },
+                    onVehicleInfo = {
+                        navController.navigate(Screen.DeliveryVehicleInfo.route)
+                    },
+                    onDocuments = {
+                        navController.navigate(Screen.DeliveryDocuments.route)
+                    },
+                    onHelpSupport = {
+                        navController.navigate(Screen.DeliveryHelpSupport.route)
+                    },
                     onLogout = {
-                        // 🔥 Clear Session
                         com.example.floatingflavors.app.core.auth.TokenManager.get(context).clearTokens()
                         com.example.floatingflavors.app.core.UserSession.userId = 0
-
                         rootNavController.navigate(Screen.Login.route) {
                             popUpTo(Screen.DeliveryRoot.route) { inclusive = true }
                             launchSingleTop = true
                         }
                     }
+                )
+            }
+
+            composable(Screen.DeliveryEditProfile.route) {
+                // Ensure we get a fresh VM or same one if scoped? Default is fresh.
+                // Re-instantiating here means form state is reset, which is fine.
+                val vm: com.example.floatingflavors.app.feature.delivery.presentation.profile.DeliveryProfileViewModel = viewModel()
+                
+                DeliveryEditProfileScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.DeliveryDocuments.route) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val application = context.applicationContext as android.app.Application
+                val vm: com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliveryDocumentsViewModel = viewModel(
+                    factory = com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliverySettingsViewModelFactory(
+                        application,
+                        com.example.floatingflavors.app.core.UserSession.userId,
+                        DeliveryRepository(NetworkClient.deliveryApi)
+                    )
+                )
+                com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliveryDocumentsScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.DeliveryVehicleInfo.route) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val application = context.applicationContext as android.app.Application
+                val vm: com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliveryVehicleViewModel = viewModel(
+                    factory = com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliverySettingsViewModelFactory(
+                        application,
+                        com.example.floatingflavors.app.core.UserSession.userId,
+                        DeliveryRepository(NetworkClient.deliveryApi)
+                    )
+                )
+                com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliveryVehicleScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.DeliveryHelpSupport.route) {
+                com.example.floatingflavors.app.feature.delivery.presentation.settings.DeliveryHelpSupportScreen(
+                    onBack = { navController.popBackStack() },
+                    onChatWithSupport = {
+                        navController.navigate(Screen.ChatBot.route)
+                    }
+                )
+            }
+
+            composable(
+                Screen.ChatBot.route,
+                enterTransition = { slideInVertically { it } + fadeIn() },
+                exitTransition = { slideOutVertically { it } + fadeOut() }
+            ) {
+                ChatScreen(
+                    userId = com.example.floatingflavors.app.core.UserSession.userId,
+                    viewModel = chatViewModel
                 )
             }
         }

@@ -32,49 +32,65 @@ class DeliveryDashboardViewModel(
 
     fun loadDashboard() {
         viewModelScope.launch {
-            // Also refresh notifications when dashboard loads
-            launch { notificationRepository.refreshNotifications() }
-            
-            // Fetch Dashboard
-            val response = repository.getDashboard(deliveryPartnerId)
-
-            if (response.success) {
-                _state.value = DeliveryDashboardState(
-                    deliveryPartnerName = response.deliveryPartnerName ?: "Delivery Partner",
-
-                    // ✅ ACTIVE ORDER (NO PICKUP / DROP)
-                    activeOrder = response.activeOrder?.let {
-                        OrderDto(
-                            id = it.id?.toIntOrNull() ?: 0,
-                            customerName = it.customerName ?: "",
-                            customerPhone = it.customerPhone,
-                            pickupAddress = "", 
-                            dropAddress = "",
-                            amount = it.amount?.toIntOrNull() ?: 0,
-                            status = it.status
-                        )
-                    },
-
-                    // ✅ UPCOMING ORDERS
-                    upcomingOrders = response.upcomingOrders?.map {
-                        OrderDto(
-                            id = it.id?.toIntOrNull() ?: 0,
-                            customerName = it.customerName ?: "",
-                            customerPhone = null,
-                            pickupAddress = it.pickupAddress ?: "",
-                            dropAddress = it.dropAddress ?: "",
-                            amount = it.amount?.toIntOrNull() ?: 0,
-                            status = it.status
-                        )
-                    } ?: emptyList()
-                )
-            }
-            
-            // ✅ Fetch Earnings
             try {
-                val earningRes = NetworkClient.deliveryApi.getDriverEarnings(deliveryPartnerId)
-                if (earningRes.success) {
-                    _earnings.value = earningRes
+                // Also refresh notifications when dashboard loads
+                launch { 
+                    try {
+                        notificationRepository.refreshNotifications() 
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                
+                // Fetch Dashboard and Earnings in parallel
+                val dashboardJob = launch {
+                    try {
+                        val response = repository.getDashboard(deliveryPartnerId)
+                        if (response.success) {
+                            // Process mapping on Default dispatcher to keep UI responsive
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                                val stateValue = DeliveryDashboardState(
+                                    deliveryPartnerName = response.deliveryPartnerName ?: "Delivery Partner",
+                                    activeOrder = response.activeOrder?.let {
+                                        OrderDto(
+                                            id = it.id?.toIntOrNull() ?: 0,
+                                            customerName = it.customerName ?: "",
+                                            customerPhone = it.customerPhone,
+                                            pickupAddress = "", 
+                                            dropAddress = "",
+                                            amount = it.amount?.toIntOrNull() ?: 0,
+                                            status = it.status
+                                        )
+                                    },
+                                    upcomingOrders = response.upcomingOrders?.map {
+                                        OrderDto(
+                                            id = it.id?.toIntOrNull() ?: 0,
+                                            customerName = it.customerName ?: "",
+                                            customerPhone = null,
+                                            pickupAddress = it.pickupAddress ?: "",
+                                            dropAddress = it.dropAddress ?: "",
+                                            amount = it.amount?.toIntOrNull() ?: 0,
+                                            status = it.status
+                                        )
+                                    } ?: emptyList()
+                                )
+                                _state.value = stateValue
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                
+                val earningsJob = launch {
+                    try {
+                        val earningRes = NetworkClient.deliveryApi.getDriverEarnings(deliveryPartnerId)
+                        if (earningRes.success) {
+                            _earnings.value = earningRes
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

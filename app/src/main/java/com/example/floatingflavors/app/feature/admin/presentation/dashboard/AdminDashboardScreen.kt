@@ -21,6 +21,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 
 @Composable
 fun AdminDashboardScreen(
@@ -38,6 +40,7 @@ fun AdminDashboardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.ADMIN_DASHBOARD_SCREEN)
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(bottom = 80.dp)
@@ -84,7 +87,7 @@ private fun Header(unreadCount: Int = 0, onNotificationClick: () -> Unit) {
                     fontSize = 12.sp
                 )
             }
-            
+
             // Notification Icon
             Box(Modifier.size(40.dp)) {
                 IconButton(onClick = onNotificationClick) {
@@ -96,7 +99,7 @@ private fun Header(unreadCount: Int = 0, onNotificationClick: () -> Unit) {
                     )
                 }
                 if (unreadCount > 0) {
-                     Box(
+                    Box(
                         modifier = Modifier
                             .size(10.dp)
                             .background(Color.Red, RoundedCornerShape(50))
@@ -122,18 +125,18 @@ private fun MetricsSection(
         ) {
             // TOTAL ORDERS
             MetricCard(
-                bg = Color(0xFF2196F3), 
-                value = counts?.total?.toString() ?: "0", 
-                title = "Total Orders", 
-                caption = "All Time", 
+                bg = Color(0xFF2196F3),
+                value = counts?.total?.toString() ?: "0",
+                title = "Total Orders",
+                caption = "All Time",
                 modifier = Modifier.weight(1f)
             )
             // REVENUE (From Analytics API)
             MetricCard(
-                bg = Color(0xFF00C853), 
-                value = "₹${analytics?.total_revenue?.toInt() ?: "--"}", 
-                title = "Total Revenue", 
-                caption = "Revenue", 
+                bg = Color(0xFF00C853),
+                value = "₹${analytics?.total_revenue?.toInt() ?: "--"}",
+                title = "Total Revenue",
+                caption = "Revenue",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -146,18 +149,18 @@ private fun MetricsSection(
         ) {
             // ACTIVE (Cooking/Processing)
             MetricCard(
-                bg = Color(0xFF9C27B0), 
-                value = counts?.active?.toString() ?: "0", 
-                title = "Active / Cooking", 
-                caption = "In Kitchen", 
+                bg = Color(0xFF9C27B0),
+                value = counts?.active?.toString() ?: "0",
+                title = "Active / Cooking",
+                caption = "In Kitchen",
                 modifier = Modifier.weight(1f)
             )
             // PENDING (New Orders)
             MetricCard(
-                bg = Color(0xFFFF5722), 
-                value = counts?.pending?.toString() ?: "0", 
-                title = "Pending Orders", 
-                caption = "Action Needed", 
+                bg = Color(0xFFFF5722),
+                value = counts?.pending?.toString() ?: "0",
+                title = "Pending Orders",
+                caption = "Action Needed",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -225,7 +228,7 @@ private fun LiveOrderSummarySection(counts: com.example.floatingflavors.app.feat
                 val total = (counts?.total ?: 1).toFloat()
                 val completed = (counts?.completed ?: 0).toFloat()
                 val progress = if(total > 0) completed / total else 0f
-                
+
                 LinearProgressIndicator(progress = progress, modifier = Modifier.weight(1f).height(8.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("${(progress * 100).toInt()}%")

@@ -29,6 +29,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 
 @Composable
 fun BookingScreen(
@@ -144,6 +146,7 @@ fun ResponsiveBookingStatusUI(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.BOOKING_SCREEN)
             .background(Color(0xFFF9FAFB))
             .padding(padding),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -422,6 +425,7 @@ fun ResponsiveBookingFormScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TestTags.BOOKING_SCREEN)
             .background(Color(0xFFF9FAFB))
             .verticalScroll(rememberScrollState())
     ) {

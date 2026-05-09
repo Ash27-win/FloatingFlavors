@@ -15,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.floatingflavors.app.core.navigation.Screen
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 
 @Composable
 fun UserOrdersScreen(viewModel: UserOrdersViewModel, onOpenOrderDetails: (String) -> Unit) {
@@ -26,6 +28,7 @@ fun UserOrdersScreen(viewModel: UserOrdersViewModel, onOpenOrderDetails: (String
     Column(
         Modifier
             .fillMaxSize()
+            .testTag(TestTags.USER_ORDERS_SCREEN)
             .background(Color(0xFFF8FAFC))
             .padding(top = 16.dp)
     ) {

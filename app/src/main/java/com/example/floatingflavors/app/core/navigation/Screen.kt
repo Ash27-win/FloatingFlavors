@@ -120,4 +120,12 @@ sealed class Screen(val route: String) {
     }
     
     object DeliveryNotifications : Screen("delivery_notifications")
+    
+    // ✅ EDIT PROFILE
+    object DeliveryEditProfile : Screen("delivery_edit_profile")
+    
+    // ✅ SETTINGS 
+    object DeliveryDocuments : Screen("delivery_documents")
+    object DeliveryVehicleInfo : Screen("delivery_vehicle_info")
+    object DeliveryHelpSupport : Screen("delivery_help_support")
 }

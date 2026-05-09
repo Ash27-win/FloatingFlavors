@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.floatingflavors.app.core.network.NetworkClient
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 
 @Composable
 fun SettingsScreen(
@@ -56,6 +58,7 @@ fun SettingsScreen(
     val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
+        modifier = Modifier.testTag(TestTags.SETTINGS_SCREEN),
         topBar = {}, // AdminOrders-style (no shifting header)
         containerColor = Color(0xFFF9FAFB)
     ) { innerPadding ->

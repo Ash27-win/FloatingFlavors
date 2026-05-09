@@ -21,6 +21,8 @@ fun ChatScreen(
     val orders by viewModel.orders.collectAsState()
     val events by viewModel.events.collectAsState()
     val corporates by viewModel.corporates.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -35,6 +37,35 @@ fun ChatScreen(
 
         // 🔹 HEADER
         ChatHeader()
+
+        // 🔹 LOADING INDICATOR
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+
+        // 🔹 ERROR MESSAGE
+        error?.let { msg ->
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = { viewModel.retry() }) {
+                        Text("Retry")
+                    }
+                }
+            }
+        }
 
         // 🔹 CHAT BODY
         LazyColumn(
@@ -79,7 +110,8 @@ fun ChatScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
 
             TextField(
@@ -87,11 +119,12 @@ fun ChatScreen(
                 onValueChange = { input = it },
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Ask food, track order, book event…") },
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
 
             IconButton(
-                enabled = input.isNotBlank(),
+                enabled = input.isNotBlank() && !isLoading,
                 onClick = {
                     viewModel.sendMessage(userId, input.trim())
                     input = ""

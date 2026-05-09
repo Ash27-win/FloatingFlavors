@@ -64,6 +64,42 @@ interface DeliveryApi {
         @Query("driver_id") driverId: Int,
         @Query("period") period: String = "all"
     ): DriverEarningsResponse
+
+    @GET("get_delivery_profile.php")
+    suspend fun getProfile(): com.example.floatingflavors.app.feature.delivery.data.remote.dto.DeliveryProfileResponse
+
+    @Multipart
+    @POST("update_delivery_profile.php")
+    suspend fun updateProfile(
+        @Part("name") name: okhttp3.RequestBody?,
+        @Part("email") email: okhttp3.RequestBody?,
+        @Part("phone") phone: okhttp3.RequestBody?,
+        @Part("emergency_contact") emergencyContact: okhttp3.RequestBody?,
+        @Part profileImage: okhttp3.MultipartBody.Part?
+    ): com.example.floatingflavors.app.feature.delivery.data.remote.dto.UpdateDeliveryProfileResponse
+
+    @GET("get_delivery_documents.php")
+    suspend fun getDocuments(): DeliveryDocumentResponse
+
+    @Multipart
+    @POST("upload_delivery_document.php")
+    suspend fun uploadDocument(
+        @Part("document_type") type: okhttp3.RequestBody,
+        @Part document_file: okhttp3.MultipartBody.Part
+    ): SimpleResponseDto
+
+    @GET("get_vehicle_info.php")
+    suspend fun getVehicleInfo(): DeliveryVehicleResponse
+
+    @POST("update_vehicle_info.php")
+    suspend fun updateVehicleInfo(@Body request: DeliveryVehicleUpdateRequest): SimpleResponseDto
+
+    @Multipart
+    @POST("update_vehicle_info.php")
+    suspend fun updateVehicleImage(
+        @Part("vehicle_type") vehicleType: okhttp3.RequestBody?,
+        @Part vehicleImage: okhttp3.MultipartBody.Part
+    ): VehicleUpdateResponse
 }
 
 data class DriverEarningsResponse(
@@ -174,6 +210,53 @@ data class SimpleResponseDto(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String? = null
 )
+
+// --- NEW DTOS ---
+data class DeliveryDocumentResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("documents") val data: List<DeliveryDocumentDto>? = null
+)
+
+data class DeliveryDocumentDto(
+    @SerializedName("type") val type: String?,
+    @SerializedName("document_url") val documentUrl: String?,
+    @SerializedName("status") val status: String?
+)
+
+data class DeliveryVehicleResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("data") val data: DeliveryVehicleDto? = null
+)
+
+data class DeliveryVehicleDto(
+    @SerializedName("type") val vehicleType: String?,
+    @SerializedName("model") val modelName: String?,
+    @SerializedName("number") val vehicleNumber: String?,
+    @SerializedName("year") val registrationYear: String?,
+    @SerializedName("insurance_expiry") val insuranceExpiryDate: String?,
+    @SerializedName("vehicle_image") val vehicleImage: String?
+)
+
+data class VehicleUpdateResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("data") val data: VehicleUpdateData? = null
+)
+
+data class VehicleUpdateData(
+    @SerializedName("vehicle_image") val vehicleImage: String?
+)
+
+data class DeliveryVehicleUpdateRequest(
+    @SerializedName("vehicle_type") val vehicleType: String? = null,
+    @SerializedName("model_name") val modelName: String? = null,
+    @SerializedName("vehicle_number") val vehicleNumber: String? = null,
+    @SerializedName("registration_year") val registrationYear: String? = null,
+    @SerializedName("insurance_expiry_date") val insuranceExpiryDate: String? = null
+)
+
 
 
 

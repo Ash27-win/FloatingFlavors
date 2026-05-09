@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
 import com.example.floatingflavors.MainActivity
 import com.example.floatingflavors.app.feature.admin.presentation.order.BookingDetailDialog
 import com.example.floatingflavors.app.feature.admin.presentation.order.OrderDetailDialog
@@ -70,6 +72,7 @@ fun OrdersSearchBar(
         placeholder = { Text("Search orders…") },
         modifier = modifier
             .fillMaxWidth()
+            .testTag("admin_orders_search_field")
             .heightIn(min = 44.dp),
         singleLine = true,
         shape = MaterialTheme.shapes.large
@@ -210,6 +213,7 @@ fun AdminOrdersScreen(
     val layoutDirection = LocalLayoutDirection.current
 
     Scaffold(
+        modifier = Modifier.testTag(TestTags.ADMIN_ORDERS_SCREEN),
         topBar = {},
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->

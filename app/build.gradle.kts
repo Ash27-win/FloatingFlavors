@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime.saveable)
     implementation(libs.foundation)
     implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.remote.creation.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -81,6 +82,12 @@ dependencies {
     // Compose BOM (single source of truth for Compose versions)
     // -----------------------------
     implementation(platform("androidx.compose:compose-bom:2024.05.00"))
+    
+    // UI Testing
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.mockk.agent)
 
     // Compose artifacts (NO versions here — BOM provides them)
     implementation("androidx.compose.ui:ui")

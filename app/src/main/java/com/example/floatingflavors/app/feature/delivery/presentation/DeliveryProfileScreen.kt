@@ -1,72 +1,143 @@
 package com.example.floatingflavors.app.feature.delivery.presentation
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.floatingflavors.app.feature.delivery.presentation.components.SectionHeader
+import androidx.compose.ui.platform.testTag
+import com.example.floatingflavors.app.core.util.TestTags
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
+import com.example.floatingflavors.app.feature.delivery.presentation.profile.DeliveryProfileViewModel
+import com.example.floatingflavors.app.feature.delivery.data.remote.dto.DeliveryProfileDto
+import com.example.floatingflavors.app.feature.delivery.presentation.profile.DeliveryProfileUiState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DeliveryProfileScreen(onLogout: () -> Unit) {
-
+fun DeliveryProfileScreen(
+    viewModel: DeliveryProfileViewModel = viewModel(),
+    onEditProfile: () -> Unit,
+    onVehicleInfo: () -> Unit,
+    onDocuments: () -> Unit,
+    onHelpSupport: () -> Unit,
+    onLogout: () -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Reload on entry
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+    }
 
     Scaffold(
-        bottomBar = {
-            ProfileBottomNavigationBar()
+        containerColor = Color(0xFFFFFBF7),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                modifier = Modifier.statusBarsPadding(),
+                title = {
+                    Box(modifier = Modifier.fillMaxWidth().padding(end = 40.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "PARTNER PROFILE",
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = { /* Back Not needed here as it's the main settings hub */ },
+                        modifier = Modifier.padding(start = 12.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ChevronLeft,
+                                contentDescription = "Back",
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { /* Settings context */ },
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFFBF7))
+            )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF5F5F5))
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Header
-            Text(
-                text = "Profile",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 16.dp)
-            )
-
-            // Profile Header Card
-            ProfileHeaderCard()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Contact Info Card
-            ProfileContactInfoCard()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Account Settings Card
-            ProfileAccountSettingsCard()
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Log Out Button
-            ProfileLogOutButton(
-                onClick = { showLogoutDialog = true }
-            )
-
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Version Info
-            ProfileVersionInfo()
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when (val state = uiState) {
+                is DeliveryProfileUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFFFF6D00))
+                }
+                is DeliveryProfileUiState.Error -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "Error: ${state.message}", color = Color.Red)
+                        Button(onClick = { viewModel.loadProfile() }) { Text("Retry") }
+                    }
+                }
+                is DeliveryProfileUiState.Success -> {
+                    Content(
+                        profile = state.profile,
+                        onEditProfile = onEditProfile,
+                        onVehicleInfo = onVehicleInfo,
+                        onDocuments = onDocuments,
+                        onHelpSupport = onHelpSupport,
+                        onLogoutClick = { showLogoutDialog = true },
+                        snackbarHostState = snackbarHostState
+                    )
+                }
+            }
         }
     }
 
@@ -81,399 +152,261 @@ fun DeliveryProfileScreen(onLogout: () -> Unit) {
                         showLogoutDialog = false
                         onLogout()
                     }
-                ) {
-                    Text("Yes, Logout", color = Color.Red)
-                }
+                ) { Text("Yes, Logout", color = Color.Red) }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showLogoutDialog = false }) { Text("Cancel") }
             }
         )
     }
 }
 
 @Composable
-fun ProfileHeaderCard() {
-    Card(
+private fun Content(
+    profile: DeliveryProfileDto,
+    onEditProfile: () -> Unit,
+    onVehicleInfo: () -> Unit,
+    onDocuments: () -> Unit,
+    onHelpSupport: () -> Unit,
+    onLogoutClick: () -> Unit,
+    snackbarHostState: SnackbarHostState
+) {
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+            .fillMaxSize()
+            .testTag(TestTags.DELIVERY_PROFILE_SCREEN)
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Avatar with Ring
+        Box(
+            contentAlignment = Alignment.Center
         ) {
+            // Outer Ring
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .background(Color(0xFFE0E0E0), CircleShape)
-                    .border(3.dp, Color(0xFF4CAF50), CircleShape)
-            ) {
-                Text(
-                    text = "AJ",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    .size(120.dp)
+                    .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                    .border(1.dp, Color(0xFFFFE0B2), CircleShape)
+            )
+            
+            AsyncImage(
+                model = profile.profileImage,
+                contentDescription = "Avatar",
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, Color.White, CircleShape),
+                contentScale = ContentScale.Crop
+            )
+
+            // Pro Badge
+            if (profile.isVerified) {
+                Surface(
                     color = Color.Black,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 10.dp, y = (-10).dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Verified,
+                            contentDescription = null,
+                            tint = Color(0xFFFF6D00),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("PRO", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+        // Name
+        Text(
+            text = profile.name,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
 
-            Text(
-                text = "Alex Johnson",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Tier & Rating
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
                 color = Color.Black,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.padding(end = 8.dp)
             ) {
                 Text(
-                    text = "ID: #FF-9281",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                    text = "${profile.tier.uppercase()} TIER",
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                 )
-                Text(
-                    text = " • ",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+            }
+
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(50),
+                shadowElevation = 2.dp
+            ) {
+                Row(
+                   modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                   verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(text = "${profile.rating}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Contact Details
+        SectionHeader("CONTACT DETAILS")
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+        val scope = rememberCoroutineScope()
+
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                ContactRow(
+                    icon = Icons.Default.Phone,
+                    label = "MOBILE NUMBER",
+                    value = profile.phone,
+                    containerColor = Color(0xFFF5F5F5),
+                    onCopy = {
+                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(profile.phone))
+                        scope.launch { snackbarHostState.showSnackbar("Phone number copied!") }
+                    }
                 )
-                Text(
-                    text = "4.9 ",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Black
-                )
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Rating",
-                    tint = Color(0xFFFFC107),
-                    modifier = Modifier.size(16.dp)
+                Spacer(Modifier.height(16.dp))
+                ContactRow(
+                    icon = Icons.Default.Email,
+                    label = "EMAIL ADDRESS",
+                    value = profile.email,
+                    containerColor = Color(0xFFFFF3E0),
+                    onCopy = {
+                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(profile.email))
+                        scope.launch { snackbarHostState.showSnackbar("Email address copied!") }
+                    }
                 )
             }
         }
-    }
-}
 
-@Composable
-fun ProfileContactInfoCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Account Experience
+        SectionHeader("ACCOUNT EXPERIENCE")
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
         ) {
-            // Phone Number
-            ProfileContactInfoRow(
-                title = "PHONE NUMBER",
-                value = "+1 (555) 019-2834",
-                icon = Icons.Default.Phone
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Email Address
-            ProfileContactInfoRow(
-                title = "EMAIL ADDRESS",
-                value = "alex.driver@example.com",
-                icon = Icons.Default.Email
-            )
+            Column(Modifier.padding(vertical = 12.dp)) {
+                SettingsItem(icon = Icons.Default.Person, title = "Edit Profile", modifier = Modifier.testTag(TestTags.ITEM_EDIT_PROFILE), onClick = onEditProfile)
+                SettingsItem(icon = Icons.Default.LocalShipping, title = "Vehicle Information", modifier = Modifier.testTag(TestTags.ITEM_VEHICLE_INFO), onClick = onVehicleInfo)
+                SettingsItem(icon = Icons.Default.Folder, title = "Documents", modifier = Modifier.testTag(TestTags.ITEM_DOCUMENTS), onClick = onDocuments)
+                SettingsItem(icon = Icons.Default.Help, title = "Help & Support", modifier = Modifier.testTag(TestTags.ITEM_HELP_SUPPORT), onClick = onHelpSupport)
+            }
         }
-    }
-}
-
-@Composable
-fun ProfileContactInfoRow(
-    title: String,
-    value: String,
-    icon: ImageVector
-) {
-    Column {
-        Text(
-            text = title,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.Gray,
-            letterSpacing = 0.5.sp
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Logout Button Card
+         Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5)), // Light red bg
+            modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 20.dp).clickable { onLogoutClick() }
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = Color(0xFF4CAF50),
-                modifier = Modifier.size(20.dp)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = value,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
+            Row(
+                Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                 Row(verticalAlignment = Alignment.CenterVertically) {
+                     Box(
+                         modifier = Modifier.size(36.dp).background(Color.White, CircleShape),
+                         contentAlignment = Alignment.Center
+                     ) {
+                         Icon(Icons.Default.Logout, null, tint = Color.Red, modifier = Modifier.size(18.dp))
+                     }
+                     Spacer(Modifier.width(16.dp))
+                     Text("Log Out", color = Color.Red, fontWeight = FontWeight.Bold)
+                 }
+                 Icon(Icons.Default.ChevronRight, null, tint = Color.Red.copy(alpha = 0.5f))
+            }
         }
+
+        // Bottom Navigation Spacer
+        Spacer(modifier = Modifier.height(84.dp))
     }
 }
 
-@Composable
-fun ProfileAccountSettingsCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp)
-        ) {
-            Text(
-                text = "ACCOUNT SETTINGS",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Gray,
-                letterSpacing = 0.5.sp,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Settings Items
-            ProfileSettingsItem(
-                icon = "✔",
-                title = "Edit Profile",
-                description = "Update name & details",
-                hasArrow = true
-            )
-
-            ProfileSettingsItem(
-                icon = "✘",
-                title = "Vehicle Information",
-                description = "Toyota Prius – ABC 123",
-                hasArrow = true
-            )
-
-            ProfileSettingsItem(
-                icon = "✘",
-                title = "Documents",
-                description = "License, Insurance",
-                hasArrow = true
-            )
-
-            ProfileSettingsItem(
-                icon = "✘",
-                title = "Liaia & Cimmer",
-                description = "",
-                hasArrow = true
-            )
-        }
-    }
-}
 
 @Composable
-fun ProfileSettingsItem(
-    icon: String,
-    title: String,
-    description: String,
-    hasArrow: Boolean
-) {
+fun ContactRow(icon: ImageVector, label: String, value: String, containerColor: Color, onCopy: () -> Unit) {
     Row(
-        modifier = Modifier
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+         Box(
+             modifier = Modifier.size(44.dp).background(containerColor, CircleShape),
+             contentAlignment = Alignment.Center
+         ) {
+             Icon(icon, null, tint = if(icon == Icons.Default.Email) Color(0xFFFF6D00) else Color(0xFF1E88E5), modifier = Modifier.size(20.dp))
+         }
+         Spacer(Modifier.width(16.dp))
+         Column(Modifier.weight(1f)) {
+             Text(label, fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+             Text(value, fontSize = 14.sp, color = Color.Black, fontWeight = FontWeight.SemiBold)
+         }
+         IconButton(onClick = onCopy) {
+             Icon(Icons.Default.ContentCopy, null, tint = Color.LightGray, modifier = Modifier.size(18.dp))
+         }
+    }
+}
+
+@Composable
+fun SettingsItem(icon: ImageVector, title: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Row(
+        modifier = modifier
             .fillMaxWidth()
-            .clickable { /* Handle click */ }
-            .padding(vertical = 12.dp, horizontal = 20.dp),
+            .clickable { onClick() }
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier
-                .size(32.dp)
-                .background(Color(0xFFF5F5F5), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = icon,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
-
-            if (description.isNotEmpty()) {
-                Text(
-                    text = description,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-            }
-        }
-
-        if (hasArrow) {
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Navigate",
-                tint = Color.Gray,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun ProfileLogOutButton(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onClick() }
-                .padding(vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Logout,
-                contentDescription = "Log Out",
-                tint = Color(0xFFD32F2F),
-                modifier = Modifier.size(20.dp)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = "Log Out",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFFD32F2F)
-            )
-        }
-    }
-}
-
-@Composable
-fun ProfileVersionInfo() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Version 1.0.4 • Build 2023.10",
-            fontSize = 12.sp,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun ProfileBottomNavigationBar() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shadowElevation = 8.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ProfileIconWithLabel(
-                icon = Icons.Default.Dashboard,
-                label = "Dashboard",
-                isSelected = false
-            )
-
-            ProfileIconWithLabel(
-                icon = Icons.Default.ListAlt,
-                label = "Orders",
-                isSelected = false
-            )
-
-            ProfileIconWithLabel(
-                icon = Icons.Default.AttachMoney,
-                label = "Earnings",
-                isSelected = false
-            )
-
-            ProfileIconWithLabel(
-                icon = Icons.Default.Person,
-                label = "Profile",
-                isSelected = true
-            )
-        }
-    }
-}
-
-@Composable
-fun ProfileIconWithLabel(
-    icon: ImageVector,
-    label: String,
-    isSelected: Boolean
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = if (isSelected) Color(0xFF4CAF50) else Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (isSelected) Color(0xFF4CAF50) else Color.Gray
-        )
+             modifier = Modifier.size(40.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)),
+             contentAlignment = Alignment.Center
+         ) {
+             Icon(icon, null, tint = Color(0xFF5D4037), modifier = Modifier.size(20.dp))
+         }
+         Spacer(Modifier.width(16.dp))
+         Text(title, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.Black, modifier = Modifier.weight(1f))
+         Icon(Icons.Default.ChevronRight, null, tint = Color.Gray)
     }
 }
