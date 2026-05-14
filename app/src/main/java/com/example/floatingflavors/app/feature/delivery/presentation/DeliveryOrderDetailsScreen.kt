@@ -58,6 +58,8 @@ fun DeliveryOrderDetailsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val pickupAddress by viewModel.pickupAddress.collectAsState()
 
+    var showRejectDialog by remember { mutableStateOf(false) }
+    var rejectReasonText by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { viewModel.loadOrderDetails() }
 
     if (isLoading) {
@@ -96,8 +98,8 @@ fun DeliveryOrderDetailsScreen(
                 }
             }
         } else {
-             // Initial fetch (if permission already granted)
-             viewModel.fetchDeviceLocation(context)
+            // Initial fetch (if permission already granted)
+            viewModel.fetchDeviceLocation(context)
         }
     }
 
@@ -129,140 +131,18 @@ fun DeliveryOrderDetailsScreen(
             }
         )
 
-            /* ---------------- MAP INTEGRATION ---------------- */
-            
-            // Map takes priority at top
-            val liveAddress = pickupAddress
-            // Simple logic: parse Lat/Lng from pickupAddress string if it was just "Loc: x,y" 
-            // OR use a separate state for actual GeoPoint in ViewModel. 
-            // For now, let's assume ViewModel exposes 'liveGeoPoint'.
-            
-            // We need to fetch it from ViewModel states we added:
-            // val livePoint by viewModel.liveLocation... (We didn't add this yet, we relied on string)
-            // Let's assume we parse it or better yet, verify ViewModel has it.
-            // Wait, we updated ViewModel to fetch routes but we didn't expose the Live GeoPoint explicitly as StateFlow for the Map.
-            // Let's assume 'pickupAddress' might contain coords or we rely on 'LastKnown' logic.
-            
-            // FIXME: Ideally ViewModel should expose 'currentGeoPoint'. 
-            // Since we are in the middle of editing, let's use a PLACEHOLDER approach for the Screen 
-            // and I will fix ViewModel right after to expose 'currentLocationVal'.
-            
-            val routes by viewModel.availableRoutes.collectAsState()
-            val selectedIndex by viewModel.selectedRouteIndex.collectAsState()
-            val isNavigating by viewModel.isNavigationStarted.collectAsState()
-            val liveGeoPoint by viewModel.currentGeoPoint.collectAsState() // 🔥 REAL DATA
-            val bearing by viewModel.currentBearing.collectAsState() // 🔥 BEARING
-            val isMuted by viewModel.isMuted.collectAsState()
-            val instruction by viewModel.currentInstruction.collectAsState() // 🔥 REAL INSTRUCTION
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp) // Large Map Area
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFFE5E5E5))
-            ) {
+        /* ---------------- MAP INTEGRATION ---------------- */
 
-                DeliveryTrackingMap(
-                   livePoint = liveGeoPoint,
-                   destination = viewModel.destinationPoint.collectAsState().value,
-                   routes = routes.map { it.points },
-                   selectedRouteIndex = selectedIndex,
-                   isNavigationStarted = isNavigating,
-                   bearing = bearing,
-                   compassBearing = 0f, // Not needed in overview
-                   modifier = Modifier.fillMaxSize()
-                )
-                
-                // OVERLAYS
-                if (!isNavigating && routes.isNotEmpty()) {
-                    // ROUTE SELECTOR
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .background(Color.White.copy(alpha = 0.9f))
-                            .padding(16.dp)
-                    ) {
-                        Text("Select Route", fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(8.dp))
-                        
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            routes.forEachIndexed { index, route ->
-                                FilterChip(
-                                    selected = selectedIndex == index,
-                                    onClick = { viewModel.selectRoute(index) },
-                                    label = { 
-                                        Column {
-                                            Text(route.description, fontWeight = FontWeight.Bold)
-                                            Text("${route.durationMin} min (${route.distanceMeters / 1000} km)", fontSize = 10.sp)
-                                        }
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFE6F7EC),
-                                        selectedLabelColor = Color(0xFF16A34A)
-                                    )
-                                )
-                            }
-                        }
-                        
-                        Spacer(Modifier.height(12.dp))
-                        
-                        Button(
-                            onClick = { viewModel.toggleNavigation(true) },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            colors = ButtonDefaults.buttonColors(Color(0xFF2E63F5))
-                        ) {
-                            Icon(Icons.Default.Navigation, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Start Navigation")
-                        }
-                    }
-                }
-                
-                if (isNavigating) {
-                    // NAVIGATION BAR
-                    Surface(
-                        modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF222222),
-                        shadowElevation = 8.dp
-                    ) {
-                        Row(
-                            Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.TurnRight, null, tint = Color.White, modifier = Modifier.size(32.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Next Turn", color = Color.Gray, fontSize = 12.sp)
-                                Text(
-                                    text = instruction ?: "Calculating...", // 🔥 DYNAMIC TEXT
-                                    color = Color.White, 
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 2
-                                )
-                            }
-                            Spacer(Modifier.width(16.dp))
-                            
-                            // MUTE BUTTON
-                            IconButton(onClick = { viewModel.toggleMute() }) {
-                                Icon(
-                                    if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp, 
-                                    null, 
-                                    tint = Color.White
-                                )
-                            }
-                            
-                            IconButton(onClick = { viewModel.toggleNavigation(false) }) {
-                                Icon(Icons.Default.Close, null, tint = Color.Red)
-                            }
-                        }
-                    }
-                }
-            }
+        // Map takes priority at top
+        val liveAddress = pickupAddress
+        // Simple logic: parse Lat/Lng from pickupAddress string if it was just "Loc: x,y"
+        // OR use a separate state for actual GeoPoint in ViewModel.
 
-            Column(Modifier.padding(16.dp)) {
+
+        val routes by viewModel.availableRoutes.collectAsState()
+        val selectedIndex by viewModel.selectedRouteIndex.collectAsState()
+
+        Column(Modifier.padding(16.dp)) {
 
             /* ---------------- ORDER HEADER ---------------- */
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -291,11 +171,14 @@ fun DeliveryOrderDetailsScreen(
             Row {
                 InfoChip(Icons.Default.Payments, "Online Payment")
                 Spacer(Modifier.width(8.dp))
-                InfoChip(Icons.Default.Schedule, "Est. ${routes.getOrNull(selectedIndex)?.durationMin ?: 25} mins")
+                InfoChip(
+                    Icons.Default.Schedule,
+                    "Est. ${routes.getOrNull(selectedIndex)?.durationMin ?: 25} mins"
+                )
             }
 
             Spacer(Modifier.height(16.dp))
-            
+
             // 🔥 REJECTION WARNING (NEW)
             if (data.status == "REJECTED") {
                 Card(
@@ -307,7 +190,11 @@ fun DeliveryOrderDetailsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Warning, null, tint = Color.Red)
                             Spacer(Modifier.width(8.dp))
-                            Text("Execution Problem", color = Color.Red, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Execution Problem",
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
@@ -330,14 +217,16 @@ fun DeliveryOrderDetailsScreen(
                 )
             ) {
                 Column(Modifier.padding(16.dp)) {
+                    val currentDistMeters = routes.getOrNull(selectedIndex)?.distanceMeters
+                    val dynamicDistance = if (currentDistMeters != null) String.format("%.1f km away", currentDistMeters / 1000f) else data.distance ?: "..."
 
                     LocationItem(
                         iconBg = Color(0xFFFFF1E6),
                         icon = Icons.Default.Store,
                         title = "PICKUP",
-                        name = "Floating Flavors Hub A",
-                        address = pickupAddress,
-                        extra = "1.2 mi away"
+                        name = "Floating Flavors Restaurant",
+                        address = "Mahalakshmi Nagar, Chengalpattu, Tamil Nadu",
+                        extra = "" // Fixed location
                     )
 
                     Spacer(Modifier.height(18.dp))
@@ -346,186 +235,226 @@ fun DeliveryOrderDetailsScreen(
                         iconBg = Color(0xFFFFEBEE),
                         icon = Icons.Default.LocationOn,
                         title = "DROP-OFF",
-                        name = "Home",
+                        name = data.customerName ?: "Customer Home",
                         address = data.deliveryAddress ?: "Address unavailable",
-                        extra = "Leave at door"
+                        extra = dynamicDistance
                     )
                 }
             }
-            
-            } // End Column padding
 
-            Spacer(Modifier.height(16.dp))
+        } // End Column padding
 
-            /* ---------------- CUSTOMER CARD ---------------- */
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+        Spacer(Modifier.height(16.dp))
+
+        /* ---------------- CUSTOMER CARD ---------------- */
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color(0xFFE5E5E5), CircleShape)
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(Color(0xFFE5E5E5), CircleShape)
+                )
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(Modifier.weight(1f)) {
+                    Text(data.customerName, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Customer since 2021",
+                        fontSize = 12.sp,
+                        color = Color.Gray
                     )
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Column(Modifier.weight(1f)) {
-                        Text(data.customerName, fontWeight = FontWeight.Bold)
-                        Text(
-                            "Customer since 2021",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
-
-                    IconButton(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .border(1.dp, Color(0xFFEA580C), CircleShape),
-                        onClick = {
-                            val phone = data.customerPhone
-
-                            if (!phone.isNullOrBlank()) {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
-                                )
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Customer phone number not available",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    ) {
-                        Icon(Icons.Default.Call, null, tint = Color(0xFFEA580C))
-                    }
                 }
-            }
 
-            Spacer(Modifier.height(24.dp))
+                IconButton(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .border(1.dp, Color(0xFFEA580C), CircleShape),
+                    onClick = {
+                        val phone = data.customerPhone
 
-            /* ---------------- ACTION BUTTONS ---------------- */
-            if (canAccept) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), // Added padding here
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        if (!phone.isNullOrBlank()) {
+                            context.startActivity(
+                                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
+                            )
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Customer phone number not available",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 ) {
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.rejectOrder() }
-                    ) {
-                        Text("Reject")
-                    }
-
-                    Button(
-                        modifier = Modifier.weight(2f),
-                        colors = ButtonDefaults.buttonColors(Color(0xFFEA580C)),
-                        onClick = {
-
-                            if (!DeliveryPermissionHandler.hasLocationPermission(activity)) {
-                                DeliveryPermissionHandler.requestLocationPermission(activity)
-                                Toast.makeText(
-                                    context,
-                                    "Allow location permission",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                return@Button
-                            }
-
-                            val lm =
-                                context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                            if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                context.startActivity(
-                                    Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                                )
-                                Toast.makeText(
-                                    context,
-                                    "Turn ON GPS to accept order",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                return@Button
-                            }
-
-                            viewModel.acceptOrderAndStartTracking(context)
-                        }
-                    ) {
-                        Text("Accept Order →")
-                    }
+                    Icon(Icons.Default.Call, null, tint = Color(0xFFEA580C))
                 }
             }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        /* ---------------- ACTION BUTTONS ---------------- */
+        if (canAccept) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(horizontal = 16.dp), // Added padding here
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = { showRejectDialog = true }
+                ) {
+                    Text("Reject")
+                }
+
+                Button(
+                    modifier = Modifier.weight(2f),
+                    colors = ButtonDefaults.buttonColors(Color(0xFFEA580C)),
+                    onClick = {
+
+                        if (!DeliveryPermissionHandler.hasLocationPermission(activity)) {
+                            DeliveryPermissionHandler.requestLocationPermission(activity)
+                            Toast.makeText(
+                                context,
+                                "Allow location permission",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return@Button
+                        }
+
+                        val lm =
+                            context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                        if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                            context.startActivity(
+                                Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            )
+                            Toast.makeText(
+                                context,
+                                "Turn ON GPS to accept order",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return@Button
+                        }
+
+                        viewModel.acceptOrderAndStartTracking(context)
+                    }
+                ) {
+                    Text("Accept Order →")
+                }
+            }
+            if (showRejectDialog) {
+                AlertDialog(
+                    onDismissRequest = { showRejectDialog = false },
+                    title = { Text("Reject Order") },
+                    text = {
+                        OutlinedTextField(
+                            value = rejectReasonText,
+                            onValueChange = { rejectReasonText = it },
+                            label = { Text("Reason for rejection") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (rejectReasonText.isNotBlank()) {
+                                    viewModel.rejectOrder(rejectReasonText)
+                                    showRejectDialog = false
+                                    rejectReasonText = ""
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Please enter a reason",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                        ) {
+                            Text("Confirm Reject", color = Color.White)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showRejectDialog = false }) {
+                            Text("Cancel", color = Color.Gray)
+                        }
+                    }
+                )
+            }
+        }
     }
 }
 
 /* ---------------- COMPONENTS ---------------- */
 
-@Composable
-private fun InfoChip(icon: ImageVector, text: String) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF1F1F1)
-    ) {
-        Row(
-            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+    @Composable
+    private fun InfoChip(icon: ImageVector, text: String) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFF1F1F1)
         ) {
-            Icon(icon, null, Modifier.size(16.dp), tint = Color.Gray)
-            Spacer(Modifier.width(4.dp))
-            Text(text, fontSize = 12.sp, color = Color.Gray)
+            Row(
+                Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(icon, null, Modifier.size(16.dp), tint = Color.Gray)
+                Spacer(Modifier.width(4.dp))
+                Text(text, fontSize = 12.sp, color = Color.Gray)
+            }
         }
     }
-}
 
-@Composable
-private fun LocationItem(
-    iconBg: Color,
-    icon: ImageVector,
-    title: String,
-    name: String,
-    address: String,
-    extra: String
-) {
-    Row(verticalAlignment = Alignment.Top) {
+    @Composable
+    private fun LocationItem(
+        iconBg: Color,
+        icon: ImageVector,
+        title: String,
+        name: String,
+        address: String,
+        extra: String
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(iconBg, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, null, tint = Color(0xFFEA580C))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(iconBg, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, null, tint = Color(0xFFEA580C))
+                }
+                Spacer(
+                    Modifier
+                        .width(1.dp)
+                        .height(32.dp)
+                        .background(Color(0xFFE5E7EB))
+                )
             }
-            Spacer(
-                Modifier
-                    .width(1.dp)
-                    .height(32.dp)
-                    .background(Color(0xFFE5E7EB))
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 12.sp, color = Color.Gray)
+                Text(name, fontWeight = FontWeight.Bold)
+                Text(address, fontSize = 13.sp, color = Color.Gray)
+                Text(extra, fontSize = 12.sp, color = Color(0xFFEA580C))
+            }
+
+            Icon(
+                Icons.Default.Navigation,
+                null,
+                tint = Color(0xFFEA580C),
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFFFEDD5), CircleShape)
+                    .padding(8.dp)
             )
         }
-
-        Spacer(Modifier.width(12.dp))
-
-        Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 12.sp, color = Color.Gray)
-            Text(name, fontWeight = FontWeight.Bold)
-            Text(address, fontSize = 13.sp, color = Color.Gray)
-            Text(extra, fontSize = 12.sp, color = Color(0xFFEA580C))
-        }
-
-        Icon(
-            Icons.Default.Navigation,
-            null,
-            tint = Color(0xFFEA580C),
-            modifier = Modifier
-                .size(40.dp)
-                .background(Color(0xFFFFEDD5), CircleShape)
-                .padding(8.dp)
-        )
     }
-}

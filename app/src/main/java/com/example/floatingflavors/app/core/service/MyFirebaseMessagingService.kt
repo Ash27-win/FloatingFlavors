@@ -80,10 +80,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val mutableData = remoteMessage.data.toMutableMap()
             if (!mutableData.containsKey("screen")) {
                 if (type == "NEW_ORDER") {
-                    mutableData["screen"] = "OrderTrackingScreen"
+                    mutableData["screen"] = "OrderTrackingScreen" // Generic fallbacks
                 } else if (type == "ORDER_UPDATE") {
                     mutableData["screen"] = "UserOrderDetails"
-                    // Ensure reference_id is set
+                    if (!mutableData.containsKey("reference_id") && orderId != null) {
+                        mutableData["reference_id"] = orderId
+                    }
+                } else if (type == "COMPLIANCE_ALERT") {
+                    mutableData["screen"] = "DeliveryVehicleInfo"
+                } else if (type == "DOCUMENT_REJECTED") {
+                    mutableData["screen"] = "DeliveryDocuments"
+                } else if (type == "ORDER_ASSIGNED") {
+                    mutableData["screen"] = "DeliveryOrderDetails"
                     if (!mutableData.containsKey("reference_id") && orderId != null) {
                         mutableData["reference_id"] = orderId
                     }

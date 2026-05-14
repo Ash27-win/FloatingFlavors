@@ -33,7 +33,6 @@ fun OrderDetailsScreen(
     }
 
     val order by viewModel.order.collectAsState()
-    val address by viewModel.address.collectAsState()
 
     val deliveryFee = 20.0
     val gstPercent = 0.05
@@ -195,7 +194,7 @@ fun OrderDetailsScreen(
                 Spacer(Modifier.height(4.dp))
 
                 Text(
-                    "${address?.house ?: "-"}, ${address?.area ?: "-"}, ${address?.city ?: "-"}",
+                    order?.delivery_address ?: "Address unavailable",
                     color = Color(0xFF6B7280),
                     modifier = Modifier.padding(start = 26.dp)
                 )

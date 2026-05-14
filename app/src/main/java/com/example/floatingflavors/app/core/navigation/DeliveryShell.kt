@@ -54,10 +54,16 @@ fun DeliveryShell(
         if (com.example.floatingflavors.app.core.navigation.PendingNotification.hasPending()) {
             val pending = com.example.floatingflavors.app.core.navigation.PendingNotification.consume()
             pending?.let { (screen, refId) ->
-                if (screen == "OrderTrackingScreen" && refId.isNotEmpty()) {
-                    navController.navigate(
-                        Screen.DeliveryTracking.createRoute(refId.toInt())
-                    )
+                when (screen) {
+                    "OrderTrackingScreen", "DeliveryTracking" -> {
+                        if (refId.isNotEmpty()) navController.navigate(Screen.DeliveryTracking.createRoute(refId.toInt()))
+                    }
+                    "DeliveryVehicleInfo" -> navController.navigate(Screen.DeliveryVehicleInfo.route)
+                    "DeliveryDocuments" -> navController.navigate(Screen.DeliveryDocuments.route)
+                    "DeliveryNotifications" -> navController.navigate(Screen.DeliveryNotifications.route)
+                    "DeliveryOrderDetails" -> {
+                        if (refId.isNotEmpty()) navController.navigate(Screen.DeliveryOrderDetails.createRoute(refId.toInt()))
+                    }
                 }
             }
         }
@@ -138,10 +144,20 @@ fun DeliveryShell(
                                 dashboardViewModel.refreshOrders()
                             }
                             is com.example.floatingflavors.app.core.service.NotificationEvent.Navigate -> {
-                                if (event.screen == "OrderTrackingScreen" && !event.referenceId.isNullOrEmpty()) {
-                                    navController.navigate(
-                                        Screen.DeliveryTracking.createRoute(event.referenceId.toInt())
-                                    )
+                                when (event.screen) {
+                                    "OrderTrackingScreen", "DeliveryTracking" -> {
+                                        if (!event.referenceId.isNullOrEmpty()) {
+                                            navController.navigate(Screen.DeliveryTracking.createRoute(event.referenceId.toInt()))
+                                        }
+                                    }
+                                    "DeliveryVehicleInfo" -> navController.navigate(Screen.DeliveryVehicleInfo.route)
+                                    "DeliveryDocuments" -> navController.navigate(Screen.DeliveryDocuments.route)
+                                    "DeliveryNotifications" -> navController.navigate(Screen.DeliveryNotifications.route)
+                                    "DeliveryOrderDetails" -> {
+                                        if (!event.referenceId.isNullOrEmpty()) {
+                                            navController.navigate(Screen.DeliveryOrderDetails.createRoute(event.referenceId.toInt()))
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -178,11 +194,10 @@ fun DeliveryShell(
             
             /* ---------------- NOTIFICATIONS ---------------- */
             composable(Screen.DeliveryNotifications.route) {
-                // Ensure Application context is available
-                val vm: com.example.floatingflavors.app.feature.delivery.presentation.notification.DeliveryNotificationViewModel = viewModel()
-                com.example.floatingflavors.app.feature.delivery.presentation.notification.DeliveryNotificationScreen(
-                    viewModel = vm,
-                    onBack = { navController.popBackStack() }
+                val vm: com.example.floatingflavors.app.feature.delivery.presentation.notifications.DeliveryNotificationViewModel = viewModel()
+                com.example.floatingflavors.app.feature.delivery.presentation.notifications.DeliveryNotificationScreen(
+                    navController = navController,
+                    viewModel = vm
                 )
             }
 
@@ -204,7 +219,7 @@ fun DeliveryShell(
                         navController.navigate(
                             Screen.DeliveryTracking.createRoute(id)
                         ) {
-                            popUpTo(Screen.DeliveryOrderDetails.route) { inclusive = true }
+                            popUpTo(Screen.DeliveryDashboard.route) { inclusive = false }
                         }
                     }
                 )

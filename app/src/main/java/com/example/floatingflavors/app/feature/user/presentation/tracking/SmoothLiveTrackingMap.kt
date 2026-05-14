@@ -59,33 +59,24 @@ fun SmoothLiveTrackingMap(
                         position = destination
                         title = "Destination"
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        icon = androidx.core.content.ContextCompat.getDrawable(map.context, com.example.floatingflavors.R.drawable.ic_location_pin)
                     }
                 )
             }
 
-// 🚚 Live Marker (ONLY IF AVAILABLE)
+            // 🚚 Live Marker (ONLY IF AVAILABLE)
             if (livePoint != null) {
                 if (marker == null) {
                     marker = Marker(map).apply {
                         position = livePoint
                         title = "Delivery Partner"
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        icon = androidx.core.content.ContextCompat.getDrawable(map.context, com.example.floatingflavors.R.drawable.ic_marker_scooter)
                     }
                     map.overlays.add(marker)
                 } else {
                     animateMarkerSmooth(marker!!, marker!!.position, livePoint)
                 }
-            }
-
-
-            // 🏁 Destination Marker
-            if (map.overlays.none { it is Marker && it.title == "Destination" }) {
-                map.overlays.add(
-                    Marker(map).apply {
-                        position = destination
-                        title = "Destination"
-                    }
-                )
             }
 
             // 🟢 Polyline
@@ -100,9 +91,10 @@ fun SmoothLiveTrackingMap(
                 polyline!!.setPoints(routePoints.value)
             }
 
-//            polyline!!.setPoints(listOf(livePoint, destination))
-
-            map.controller.animateTo(livePoint)
+            val centerPoint = livePoint ?: destination
+            if (centerPoint != null) {
+                map.controller.animateTo(centerPoint)
+            }
             map.invalidate()
         }
     )

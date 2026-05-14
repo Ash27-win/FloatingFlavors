@@ -80,10 +80,12 @@ class CheckoutViewModel(
                     if (res.status && res.data != null) {
                         _addresses.value = res.data
                         
-                        // Auto-select Default
-                        val defaultAddr = res.data.find { it.is_default == 1 } ?: res.data.firstOrNull()
-                        if (defaultAddr != null) {
-                            selectedAddressId.value = defaultAddr.id
+                        // Auto-select Default only if not already selected
+                        if (selectedAddressId.value == null) {
+                            val defaultAddr = res.data.find { it.is_default == 1 } ?: res.data.firstOrNull()
+                            if (defaultAddr != null) {
+                                selectedAddressId.value = defaultAddr.id
+                            }
                         }
                     }
                 } catch (e: Exception) {

@@ -7,5 +7,6 @@ data class UserOrderDetailDto(
     val status: String?,
     val created_at: String?,
     val time_ago: String?,
-    val amount: String?
+    val amount: String?,
+    val delivery_address: String?
 )

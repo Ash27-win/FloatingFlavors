@@ -9,9 +9,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.floatingflavors.app.feature.delivery.presentation.tracking.DeliveryLocationStream
@@ -106,6 +117,9 @@ fun DeliveryLiveTrackingScreen(
             val backendLive by vm.liveLocation.collectAsState()
             val displayPoint = localLivePoint ?: backendLive
             
+            var zoomInTrigger by remember { mutableStateOf(0) }
+            var zoomOutTrigger by remember { mutableStateOf(0) }
+            
             DeliveryTrackingMap(
                 livePoint = displayPoint,
                 destination = backendDest,
@@ -114,8 +128,27 @@ fun DeliveryLiveTrackingScreen(
                 isNavigationStarted = isNavigating, // 🔥 Live Toggle
                 bearing = localBearing,             // 🔥 GPS Bearing (Movement)
                 compassBearing = compassAzimuth,    // 🔥 Compass Bearing (Stationary)
+                zoomInTrigger = zoomInTrigger,
+                zoomOutTrigger = zoomOutTrigger,
                 modifier = Modifier.fillMaxSize()
             )
+            
+            // 🧭 ZOOM CONTROLS
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp)
+                    .background(Color.White, RoundedCornerShape(8.dp)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { zoomOutTrigger++ }) {
+                    Icon(Icons.Default.Remove, "Zoom Out", tint = Color.Black)
+                }
+                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = Color.LightGray)
+                IconButton(onClick = { zoomInTrigger++ }) {
+                    Icon(Icons.Default.Add, "Zoom In", tint = Color.Black)
+                }
+            }
             
             // 🧭 RE-CENTER BUTTON (Small Crosshairs)
             if (!isNavigating) {
@@ -127,7 +160,7 @@ fun DeliveryLiveTrackingScreen(
                     modifier = Modifier
                         .align(androidx.compose.ui.Alignment.BottomEnd)
                         .padding(bottom = 80.dp, end = 16.dp),
-                    containerColor = androidx.compose.ui.graphics.Color.White,
+                    containerColor = androidx.compose.ui.graphics.Color(0xFFE8F5E9),
                     contentColor = androidx.compose.ui.graphics.Color.Black
                 ) {
                     androidx.compose.material3.Icon(

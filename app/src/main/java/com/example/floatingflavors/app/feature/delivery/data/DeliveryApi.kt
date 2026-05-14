@@ -20,7 +20,8 @@ interface DeliveryApi {
     suspend fun updateOrderStatus(
         @Field("order_id") orderId: Int,
         @Field("status") status: String,
-        @Field("delivery_partner_id") deliveryPartnerId: Int? = null
+        @Field("delivery_partner_id") deliveryPartnerId: Int? = null,
+        @Field("reject_reason") rejectReason: String? = null
     ): SimpleResponseDto
 
     // ✅ REUSE: For updating live location, use update_order_location.php (already exists)
@@ -100,6 +101,23 @@ interface DeliveryApi {
         @Part("vehicle_type") vehicleType: okhttp3.RequestBody?,
         @Part vehicleImage: okhttp3.MultipartBody.Part
     ): VehicleUpdateResponse
+
+    // --- NOTIFICATION APIs ---
+    @GET("get_notifications.php")
+    suspend fun getNotifications(
+        @Query("limit") limit: Int = 20,
+        @Query("offset") offset: Int = 0
+    ): DeliveryNotificationResponse
+
+    @POST("mark_notification_read.php")
+    suspend fun markNotificationRead(
+        @Body request: MarkNotificationRequest
+    ): SimpleResponseDto
+
+    @POST("delete_notification.php")
+    suspend fun deleteNotification(
+        @Body request: DeleteNotificationRequest
+    ): SimpleResponseDto
 }
 
 data class DriverEarningsResponse(
@@ -255,6 +273,33 @@ data class DeliveryVehicleUpdateRequest(
     @SerializedName("vehicle_number") val vehicleNumber: String? = null,
     @SerializedName("registration_year") val registrationYear: String? = null,
     @SerializedName("insurance_expiry_date") val insuranceExpiryDate: String? = null
+)
+
+// --- NOTIFICATION DTOs ---
+data class DeliveryNotificationResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("unread_count") val unreadCount: Int = 0,
+    @SerializedName("data") val notifications: List<DeliveryNotificationDto>? = null
+)
+
+data class DeliveryNotificationDto(
+    @SerializedName("id") val id: Int,
+    @SerializedName("title") val title: String?,
+    @SerializedName("body") val body: String?,
+    @SerializedName("type") val type: String?,
+    @SerializedName("reference_id") val referenceId: String?,
+    @SerializedName("is_read") val isRead: Int,
+    @SerializedName("time_ago") val timeAgo: String?,
+    @SerializedName("created_at") val createdAt: String?
+)
+
+data class MarkNotificationRequest(
+    @SerializedName("notification_id") val notificationId: Int? = null // Null means mark all read
+)
+
+data class DeleteNotificationRequest(
+    @SerializedName("notification_id") val notificationId: Int
 )
 
 

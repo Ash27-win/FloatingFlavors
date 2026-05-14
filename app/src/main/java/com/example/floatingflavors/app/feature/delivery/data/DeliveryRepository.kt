@@ -32,25 +32,34 @@ class DeliveryRepository(
 
     /* ---------------- ORDER ACTIONS ---------------- */
 
-    suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto {
-        val res = api.acceptOrder(orderId, deliveryPartnerId)
-        return SimpleResponseDto(
-            success = res.success,
-            message = res.message
-        )
-    }
+    suspend fun acceptOrder(orderId: Int, deliveryPartnerId: Int): SimpleResponseDto =
+        try {
+            val res = api.acceptOrder(orderId, deliveryPartnerId)
+            SimpleResponseDto(success = res.success, message = res.message)
+        } catch (e: Exception) {
+            SimpleResponseDto(false, "Network Error: ${e.message}")
+        }
 
-    suspend fun rejectOrder(orderId: Int): SimpleResponseDto =
-        api.updateOrderStatus(
-            orderId = orderId,
-            status = "REJECTED"
-        )
+    suspend fun rejectOrder(orderId: Int, reason: String): SimpleResponseDto =
+        try {
+            api.updateOrderStatus(
+                orderId = orderId,
+                status = "REJECTED",
+                rejectReason = reason
+            )
+        } catch (e: Exception) {
+            SimpleResponseDto(false, "Network Error: ${e.message}")
+        }
 
     suspend fun markAsDelivered(orderId: Int): SimpleResponseDto =
-        api.updateOrderStatus(
-            orderId = orderId,
-            status = "COMPLETED"
-        )
+        try {
+            api.updateOrderStatus(
+                orderId = orderId,
+                status = "COMPLETED"
+            )
+        } catch (e: Exception) {
+            SimpleResponseDto(false, "Network Error: ${e.message}")
+        }
 
     /* ---------------- LIVE LOCATION ---------------- */
 
@@ -200,5 +209,33 @@ class DeliveryRepository(
             api.updateVehicleImage(typeBody, imagePart)
         } catch (e: Exception) {
             VehicleUpdateResponse(false, "Vehicle image update failed: ${e.message}")
+        }
+
+    /* ---------------- NOTIFICATIONS ---------------- */
+
+    suspend fun getNotifications(limit: Int = 20, offset: Int = 0): com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryNotificationResponse =
+        try {
+            api.getNotifications(limit, offset)
+        } catch (e: Exception) {
+            com.example.floatingflavors.app.feature.delivery.data.remote.DeliveryNotificationResponse(
+                success = false,
+                message = "Failed: ${e.message}",
+                unreadCount = 0,
+                notifications = emptyList()
+            )
+        }
+
+    suspend fun markNotificationRead(id: Int?): SimpleResponseDto =
+        try {
+            api.markNotificationRead(com.example.floatingflavors.app.feature.delivery.data.remote.MarkNotificationRequest(id))
+        } catch (e: Exception) {
+            SimpleResponseDto(false, "Failed to mark read: ${e.message}")
+        }
+
+    suspend fun deleteNotification(id: Int): SimpleResponseDto =
+        try {
+            api.deleteNotification(com.example.floatingflavors.app.feature.delivery.data.remote.DeleteNotificationRequest(id))
+        } catch (e: Exception) {
+            SimpleResponseDto(false, "Failed to delete: ${e.message}")
         }
 }

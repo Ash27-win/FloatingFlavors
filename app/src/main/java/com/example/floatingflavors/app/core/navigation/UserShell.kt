@@ -447,9 +447,7 @@ fun UserShell(
                 val orderDetailsVm = remember {
                     OrderDetailsViewModel(
                         ordersRepo = UserOrdersRepository(NetworkClient.userOrdersApi),
-                        addressRepo = AddressRepository(NetworkClient.addressApi),
                         userId = com.example.floatingflavors.app.core.UserSession.userId
-
                     )
                 }
 

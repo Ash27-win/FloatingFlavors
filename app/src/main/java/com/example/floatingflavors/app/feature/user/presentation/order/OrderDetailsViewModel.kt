@@ -12,23 +12,15 @@ import kotlinx.coroutines.launch
 
 class OrderDetailsViewModel(
     private val ordersRepo: UserOrdersRepository,
-    private val addressRepo: AddressRepository,
     private val userId: Int
 ) : ViewModel() {
 
     private val _order = MutableStateFlow<UserOrderDetailDto?>(null)
     val order: StateFlow<UserOrderDetailDto?> = _order
 
-    private val _address = MutableStateFlow<AddressDto?>(null)
-    val address: StateFlow<AddressDto?> = _address
-
     fun load(orderId: String) {
         viewModelScope.launch {
             _order.value = ordersRepo.getOrderDetailsScreen(orderId)
-            _address.value = addressRepo
-                .load(userId)
-                .data
-                ?.firstOrNull { it.is_default == 1 }
         }
     }
 }

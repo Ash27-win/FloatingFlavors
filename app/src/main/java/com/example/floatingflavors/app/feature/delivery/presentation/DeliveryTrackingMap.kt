@@ -20,6 +20,8 @@ fun DeliveryTrackingMap(
     isNavigationStarted: Boolean,
     bearing: Float,        // GPS Bearing
     compassBearing: Float, // Device Compass Bearing
+    zoomInTrigger: Int = 0,
+    zoomOutTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
     // if (livePoint == null) return  <-- REMOVED to keep MapView visible
@@ -29,14 +31,14 @@ fun DeliveryTrackingMap(
     val traveledPolyline = remember { 
         Polyline().apply {
             outlinePaint.color = 0xFFCCCCCC.toInt() // Gray
-            outlinePaint.strokeWidth = 20f
+            outlinePaint.strokeWidth = 8f
             outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
         } 
     }
     val remainingPolyline = remember { 
         Polyline().apply {
-            outlinePaint.color = 0xFF2E63F5.toInt() // Brand Blue
-            outlinePaint.strokeWidth = 20f
+            outlinePaint.color = 0xFF000000.toInt() // Solid Black
+            outlinePaint.strokeWidth = 8f
             outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
         } 
     }
@@ -48,6 +50,9 @@ fun DeliveryTrackingMap(
     
     // Initial Center Logi
     var isMapInitialized by remember { mutableStateOf(false) }
+    
+    // Zoom state trackers
+    val trackedTriggers = remember { intArrayOf(0, 0) }
 
     AndroidView(
         modifier = modifier,
@@ -87,6 +92,16 @@ fun DeliveryTrackingMap(
                 }
             }
 
+            // Custom Zoom Triggers Logic
+            if (trackedTriggers[0] != zoomInTrigger) {
+                trackedTriggers[0] = zoomInTrigger
+                map.controller.zoomIn()
+            }
+            if (trackedTriggers[1] != zoomOutTrigger) {
+                trackedTriggers[1] = zoomOutTrigger
+                map.controller.zoomOut()
+            }
+
             // 1. DRAW ROUTES
             if (routes.isNotEmpty()) {
                 val currentRoute = routes.getOrNull(selectedRouteIndex) ?: emptyList()
@@ -106,22 +121,6 @@ fun DeliveryTrackingMap(
 
             // 2. MARKERS
             
-            // A) Start
-            if (routes.isNotEmpty() && routes[0].isNotEmpty()) {
-                val startPoint = routes[0].first()
-                if (startMarker == null) {
-                    startMarker = Marker(map).apply {
-                        position = startPoint
-                        title = "Restaurant"
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        icon = androidx.core.content.ContextCompat.getDrawable(map.context, com.example.floatingflavors.R.drawable.ic_marker_restaurant)
-                        map.overlays.add(this)
-                    }
-                } else {
-                    startMarker?.position = startPoint
-                }
-            }
-
             // B) Destination
             destination?.let {
                 if (destMarker == null) {
@@ -129,7 +128,7 @@ fun DeliveryTrackingMap(
                         position = it
                         title = "Customer"
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                        icon = androidx.core.content.ContextCompat.getDrawable(map.context, com.example.floatingflavors.R.drawable.ic_marker_home)
+                        icon = androidx.core.content.ContextCompat.getDrawable(map.context, com.example.floatingflavors.R.drawable.ic_location_pin)
                         map.overlays.add(this)
                     }
                 } else {

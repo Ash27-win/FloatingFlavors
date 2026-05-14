@@ -342,9 +342,9 @@ class DeliveryOrderDetailsViewModel(
         }
     }
 
-    fun rejectOrder() {
+    fun rejectOrder(reason: String) {
         viewModelScope.launch {
-            repository.rejectOrder(orderId)
+            repository.rejectOrder(orderId, reason)
             loadOrderDetails()
         }
     }
