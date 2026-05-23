@@ -40,10 +40,10 @@ fun DeliveryLiveTrackingScreen(
 
     // 1️⃣ Backend Data (Route, ETA, etc)
     val backendDest by vm.destination.collectAsState()
-    val route by vm.routePoints.collectAsState()
+    val routesData by vm.routes.collectAsState()
+    val route = routesData.firstOrNull()?.segments?.flatMap { it.points } ?: emptyList()
     val eta by vm.etaMinutes.collectAsState()
-    val turn by vm.currentTurn.collectAsState()
-    
+
     // Debug Logging for Backend
     val backendLiveCheck by vm.liveLocation.collectAsState()
     LaunchedEffect(backendLiveCheck) {
@@ -99,12 +99,12 @@ fun DeliveryLiveTrackingScreen(
     }
 
     // 🔁 Turn instruction UI
-    turn?.let {
-        TurnCard(
-            text = it.text,
-            distance = "${it.distanceMeters} m"
-        )
-    }
+    // turn?.let {
+    //     TurnCard(
+    //         text = it.text,
+    //         distance = "${it.distanceMeters} m"
+    //     )
+    // }
 
     Column(Modifier.fillMaxSize()) {
 
@@ -132,24 +132,6 @@ fun DeliveryLiveTrackingScreen(
                 zoomOutTrigger = zoomOutTrigger,
                 modifier = Modifier.fillMaxSize()
             )
-            
-            // 🧭 ZOOM CONTROLS
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp)
-                    .background(Color.White, RoundedCornerShape(8.dp)),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { zoomOutTrigger++ }) {
-                    Icon(Icons.Default.Remove, "Zoom Out", tint = Color.Black)
-                }
-                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = Color.LightGray)
-                IconButton(onClick = { zoomInTrigger++ }) {
-                    Icon(Icons.Default.Add, "Zoom In", tint = Color.Black)
-                }
-            }
-            
             // 🧭 RE-CENTER BUTTON (Small Crosshairs)
             if (!isNavigating) {
                 androidx.compose.material3.SmallFloatingActionButton(

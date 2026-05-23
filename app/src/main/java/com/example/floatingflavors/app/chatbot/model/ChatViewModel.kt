@@ -72,10 +72,10 @@ class ChatViewModel(
                 _corporates.value = emptyList()
 
                 when (response.type) {
-                    "menu_result" -> {
+                    "menu_result", "food_carousel" -> {
                         _menuItems.value = response.menu_items ?: emptyList()
                     }
-                    "order_history" -> {
+                    "order_history", "order_tracking" -> {
                         _orders.value = response.orders ?: emptyList()
                     }
                     "event_history" -> {
@@ -97,11 +97,31 @@ class ChatViewModel(
         }
     }
 
+    private val cartRepository = com.example.floatingflavors.app.feature.user.data.cart.CartRepository()
+
+    fun addToCart(userId: Int, menuItemId: Int, price: Int) {
+        viewModelScope.launch {
+            try {
+                cartRepository.addItem(userId, menuItemId, price)
+                loadMessages()
+            } catch (e: Exception) {
+                // log or ignore
+            }
+        }
+    }
+
     fun retry() {
         val uid = lastUserId
         val msg = lastMessage
         if (uid != null && msg != null) {
             sendMessage(uid, msg)
+        }
+    }
+
+    fun clearChat() {
+        viewModelScope.launch {
+            repository.clearMessages()
+            loadMessages()
         }
     }
 }

@@ -135,7 +135,13 @@ dependencies {
 
     // Firebase
     implementation("com.google.firebase:firebase-messaging:23.2.1")
-    implementation(platform("com.google.firebase:firebase-bom:33.1.0")) // Using a newer BOM if possible, or sticking to compatible versions
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+
+    // WorkManager (Feature 8: TileCleanupWorker)
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // DataStore Preferences (ActiveSessionRepository — Phase 3)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }
 
 

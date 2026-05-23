@@ -22,7 +22,8 @@ data class ChatBotResponse(
     val cta: String? = null,
     val title: String? = null,
     val message: String? = null,
-    val quick_replies: List<String>? = null
+    val quick_replies: List<String>? = null,
+    val confidence: Double? = null
 )
 
 

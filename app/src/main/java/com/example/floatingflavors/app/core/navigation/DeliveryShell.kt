@@ -237,13 +237,12 @@ fun DeliveryShell(
                 val orderId = backStackEntry.arguments!!.getInt("orderId")
                 val deliveryPartnerId = com.example.floatingflavors.app.core.UserSession.userId
 
-                // ✅ ViewModel WITHOUT factory (factory was removed)
                 val trackingVm: DeliveryTrackingViewModel = viewModel()
 
-                DeliveryLiveTrackingScreen(
+                DeliveryTrackingMapScreen(
                     orderId = orderId,
                     deliveryPartnerId = deliveryPartnerId, // 🔥 Pass ID for DB updates
-                    vm = trackingVm
+                    viewModel = trackingVm
                 )
             }
 

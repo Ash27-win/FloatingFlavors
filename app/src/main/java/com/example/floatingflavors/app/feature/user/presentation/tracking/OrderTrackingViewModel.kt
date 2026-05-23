@@ -24,6 +24,9 @@ class OrderTrackingViewModel : ViewModel() {
     private val _destination = MutableStateFlow<GeoPoint?>(null)
     val destination = _destination.asStateFlow()
 
+    private val _routes = MutableStateFlow<List<NavigationRoute>>(emptyList())
+    val routes = _routes.asStateFlow()
+
 
     private var pollingJob: Job? = null
 
@@ -47,6 +50,28 @@ class OrderTrackingViewModel : ViewModel() {
         }
     }
 
+    private fun fetchRouteToDestination(start: GeoPoint, end: GeoPoint) {
+        viewModelScope.launch {
+            try {
+                val (points, etaMin) = com.example.floatingflavors.app.feature.user.data.tracking.OsrmRouteService.fetchRouteWithEta(start, end)
+                if (points.isNotEmpty()) {
+                    val distKm = start.distanceToAsDouble(end) / 1000.0
+                    val segment = RouteSegment(points = points, color = android.graphics.Color.BLUE)
+                    val navRoute = NavigationRoute(
+                        id = "user_route",
+                        segments = listOf(segment),
+                        totalDistanceKm = distKm,
+                        totalEtaMinutes = etaMin,
+                        isFastest = true
+                    )
+                    _routes.value = listOf(navRoute)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     private fun startLiveTracking(orderId: Int) {
         pollingJob?.cancel()
 
@@ -57,10 +82,16 @@ class OrderTrackingViewModel : ViewModel() {
                         NetworkClient.orderTrackingApi.getLiveLocation(orderId)
 
                     if (response.success && response.location != null) {
-                        _liveLocation.value = GeoPoint(
+                        val currentGeo = GeoPoint(
                             response.location.latitude,
                             response.location.longitude
                         )
+                        _liveLocation.value = currentGeo
+                        
+                        // Update Route once we have both locations and haven't fetched it yet
+                        if (_routes.value.isEmpty() && _destination.value != null) {
+                            fetchRouteToDestination(currentGeo, _destination.value!!)
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

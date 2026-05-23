@@ -12,5 +12,10 @@ data class ChatEntity(
 
     // ✅ GROUP SUPPORT (default = single chat)
     val senderName: String? = null,
-    val groupId: String? = null
+    val groupId: String? = null,
+
+    // ✅ RICH RENDER DETAILS
+    val type: String? = null,
+    val jsonMetadata: String? = null,
+    val confidence: Double? = null
 )

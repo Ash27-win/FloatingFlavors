@@ -32,10 +32,10 @@ object NetworkClient {
 
     // For Android emulator, localhost = 10.0.2.2
 //    const val BASE_URL = "http://10.145.56.250/floating_flavors_api/"  //APPA WIFI
-    const val BASE_URL = "http://10.207.66.250/floating_flavors_api/"
+    const val BASE_URL = "http://192.168.1.36/floating_flavors_api/"
 //    const val BASE_URL = "https://wv1qhk7m-80.inc1.devtunnels.ms/floating_flavors_api/"
 
-    const val CHATBOT_BASE_URL = "http://10.207.66.250:8000/"
+    const val CHATBOT_BASE_URL = "http://192.168.1.36:8000/"
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.HEADERS

@@ -4,7 +4,8 @@ data class OrderDto(
     val id: String,
     val status: String,
     val amount: Double,
-    val created_at: String
+    val created_at: String,
+    val delivery_partner: String? = null
 )
 
 data class EventDto(

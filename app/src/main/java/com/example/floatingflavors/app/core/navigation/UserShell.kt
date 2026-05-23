@@ -239,7 +239,12 @@ fun UserShell(
             ) {
                 ChatScreen(
                     userId = com.example.floatingflavors.app.core.UserSession.userId,
-                    viewModel = chatViewModel
+                    viewModel = chatViewModel,
+                    onOpenCart = {
+                        navController.navigate(Screen.UserMenuGrid.route) {
+                            popUpTo(Screen.ChatBot.route) { inclusive = true }
+                        }
+                    }
                 )
             }
 

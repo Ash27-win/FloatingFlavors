@@ -66,6 +66,8 @@ fun LiveOrderTrackingScreen(
     }
 
     val state by vm.state.collectAsState()
+    val liveLocation by vm.liveLocation.collectAsState()
+    val routes by vm.routes.collectAsState()
 
     LaunchedEffect(orderId) {
         vm.load(orderId, orderType)
@@ -510,15 +512,17 @@ fun LiveOrderTrackingScreen(
             shape = RoundedCornerShape(12.dp),
             color = Color.White
         ) {
-            val lat = data.deliveryLocation?.latitude ?: 12.9716
-            val lng = data.deliveryLocation?.longitude ?: 77.5946
+            val lat = liveLocation?.latitude ?: data.deliveryLocation?.latitude ?: 12.9716
+            val lng = liveLocation?.longitude ?: data.deliveryLocation?.longitude ?: 77.5946
 
             Box(modifier = Modifier.fillMaxSize()) {
                 // 🔹 OSM MAP
                 OsmMapComposable(
                     latitude = lat,
                     longitude = lng,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    routes = routes,
+                    isNavigating = false
                 )
 
                 // 🔹 CLICK OVERLAY

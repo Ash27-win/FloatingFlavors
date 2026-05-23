@@ -2,8 +2,11 @@ package com.example.floatingflavors.app.feature.delivery.presentation.tracking
 
 import android.annotation.SuppressLint
 import android.app.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.location.LocationManager
 import android.os.Build
 import android.os.IBinder
@@ -13,6 +16,9 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.example.floatingflavors.app.core.network.NetworkClient
+import com.example.floatingflavors.app.core.data.local.AppDatabase
+import com.example.floatingflavors.app.feature.delivery.data.local.BufferedLocationEntity
+import com.example.floatingflavors.app.feature.delivery.domain.WebSocketHeartbeatEngine
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import java.util.concurrent.TimeUnit
@@ -35,8 +41,73 @@ class DeliveryLocationUpdateService : Service() {
     private var deliveryPartnerId = 0
     private var orderId = -1
     private var isTracking = false
+    private var isLowBatteryMode = false
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val db by lazy { AppDatabase.getDatabase(this) }
+    private var syncJob: Job? = null
+
+    // ── Feature 19: WebSocket Heartbeat ───────────────────────────────────────
+    @Volatile private var isWebSocketAlive = true
+
+    private val heartbeatEngine = WebSocketHeartbeatEngine(
+        onPingSend = {
+            // Probe connectivity by attempting a lightweight API call.
+            // If this throws, WebSocketHeartbeatEngine will declare the connection dead
+            // and switch the app into Offline Mode (SQLite buffering takes over).
+            // TODO: Replace with a real WebSocket webSocket.send("{\"type\":\"PING\"}")
+            //       once you integrate OkHttp WebSocket or SockJS on the backend.
+            try {
+                NetworkClient.deliveryApi.updateLiveLocation(
+                    orderId = orderId,
+                    lat = lastLat ?: 0.0,
+                    lng = lastLng ?: 0.0,
+                    deliveryPartnerId = deliveryPartnerId
+                )
+            } catch (e: Exception) {
+                throw e  // Re-throw so heartbeat engine detects the failure
+            }
+        },
+        onConnectionDead = {
+            isWebSocketAlive = false
+            Log.w("DELIVERY_GPS", "💔 WebSocket dead — switching to SQLite buffer mode.")
+            // Notify the UI stream so the ViewModel can transition to OfflineMode
+            DeliveryLocationStream.updateConnectionState(isOnline = false)
+        },
+        onConnectionRestored = {
+            isWebSocketAlive = true
+            Log.i("DELIVERY_GPS", "✅ WebSocket restored — resuming live sync.")
+            DeliveryLocationStream.updateConnectionState(isOnline = true)
+        }
+    )
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
+        override fun onReceive(context: Context, intent: Intent) {
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            val batteryPct = level * 100 / scale.toFloat()
+
+            if (batteryPct < 15.0f && !isLowBatteryMode) {
+                isLowBatteryMode = true
+                Log.w("DELIVERY_GPS", "🔋 Low Battery Mode Activated. Throttling GPS.")
+                // Throttle GPS to save battery
+                locationRequest = LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, 5000).build()
+                if (isTracking) {
+                    stopLocationUpdates()
+                    startLocationUpdates()
+                }
+            } else if (batteryPct >= 15.0f && isLowBatteryMode) {
+                isLowBatteryMode = false
+                Log.w("DELIVERY_GPS", "🔋 Battery Recovered. Restoring High Accuracy GPS.")
+                locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000).build()
+                if (isTracking) {
+                    stopLocationUpdates()
+                    startLocationUpdates()
+                }
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -54,6 +125,7 @@ class DeliveryLocationUpdateService : Service() {
             .build()
 
         createNotificationChannel()
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
     private fun isLocationEnabled(): Boolean {
@@ -110,10 +182,14 @@ class DeliveryLocationUpdateService : Service() {
                 }
                 acquireWakeLock()
                 startLocationUpdates()
+                startOfflineSyncWorker()
+                heartbeatEngine.start()   // Feature 19: begin heartbeat loop
             }
 
             "STOP_TRACKING" -> {
+                heartbeatEngine.stop()
                 stopLocationUpdates()
+                syncJob?.cancel()
                 stopSelf()
             }
         }
@@ -239,7 +315,17 @@ class DeliveryLocationUpdateService : Service() {
                             deliveryPartnerId = deliveryPartnerId
                         )
                     } catch (e: Exception) {
-                        Log.e("DELIVERY_GPS", "❌ API error", e)
+                        Log.e("DELIVERY_GPS", "❌ API error, buffering offline", e)
+                        db.bufferedLocationDao().insertLocation(
+                            BufferedLocationEntity(
+                                orderId = orderId,
+                                deliveryPartnerId = deliveryPartnerId,
+                                latitude = loc.latitude,
+                                longitude = loc.longitude,
+                                bearing = loc.bearing,
+                                timestamp = System.currentTimeMillis()
+                            )
+                        )
                     }
                 }
             }
@@ -252,6 +338,32 @@ class DeliveryLocationUpdateService : Service() {
         )
     }
 
+    private fun startOfflineSyncWorker() {
+        syncJob = scope.launch {
+            while (isActive) {
+                delay(10000) // Check every 10s
+                try {
+                    val pending = db.bufferedLocationDao().getPendingLocations()
+                    if (pending.isNotEmpty()) {
+                        Log.d("DELIVERY_GPS", "🔄 Syncing ${pending.size} offline locations")
+                        // In an enterprise app, we'd batch upload these.
+                        // For now we'll upload the latest and clear, to catch up the dispatcher.
+                        val latest = pending.last()
+                        NetworkClient.deliveryApi.updateLiveLocation(
+                            orderId = latest.orderId,
+                            lat = latest.latitude,
+                            lng = latest.longitude,
+                            deliveryPartnerId = latest.deliveryPartnerId
+                        )
+                        db.bufferedLocationDao().deleteLocations(pending.map { it.id })
+                    }
+                } catch (e: Exception) {
+                    Log.e("DELIVERY_GPS", "❌ Offline Sync Failed", e)
+                }
+            }
+        }
+    }
+
     private fun stopLocationUpdates() {
         try {
             fusedClient.removeLocationUpdates(locationCallback)
@@ -259,8 +371,10 @@ class DeliveryLocationUpdateService : Service() {
     }
 
     override fun onDestroy() {
+        heartbeatEngine.stop()           // Feature 19: clean shutdown
         stopLocationUpdates()
         releaseWakeLock()
+        unregisterReceiver(batteryReceiver)
         scope.cancel()
         isTracking = false
         Log.d("DELIVERY_GPS", "🛑 Service DESTROYED")
