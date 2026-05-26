@@ -36,6 +36,8 @@ interface CheckoutApi {
     suspend fun placeOrder(
         @Field("user_id") userId: Int,
         @Field("payment_method") payment: String,
-        @Field("user_address_id") addressId: Int
+        @Field("user_address_id") addressId: Int,
+        @Field("include_membership") includeMembership: Boolean,
+        @Field("membership_plan_id") membershipPlanId: Int
     ): Response<PlaceOrderResponse>
 }

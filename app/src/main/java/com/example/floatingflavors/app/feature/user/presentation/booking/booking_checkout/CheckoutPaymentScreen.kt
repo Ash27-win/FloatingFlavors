@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,7 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.floatingflavors.app.core.di.PaymentResultBus
+import com.example.floatingflavors.app.core.network.NetworkClient
+import com.example.floatingflavors.app.feature.user.presentation.membership.PaymentGatewayManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun CheckoutPaymentScreen(
@@ -32,131 +37,242 @@ fun CheckoutPaymentScreen(
     onPaymentSuccess: (txnId: String, method: String) -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val userId = com.example.floatingflavors.app.core.UserSession.userId
+
     var selectedMethod by remember { mutableStateOf("UPI") }
+    var hasActiveMembership by remember { mutableStateOf(false) }
+    var suggestedPlanId by remember { mutableStateOf<Int?>(null) }
+    var suggestedPlanPrice by remember { mutableStateOf(0.0) }
+    var suggestedPlanCode by remember { mutableStateOf("") }
+    var includeMembership by remember { mutableStateOf(false) }
+    var isProcessing by remember { mutableStateOf(false) }
 
-    // Observe UPI result
-    val paymentResult by PaymentResultBus.result.collectAsState()
-
-    LaunchedEffect(paymentResult) {
-        when (paymentResult) {
-            "SUCCESS" -> {
-                vm.markPaymentSuccess(
-                    bookingId = bookingId,
-                    method = "UPI"
-                ) { txnId ->
-                    onPaymentSuccess(txnId, "UPI")
+    // Load active membership to check for cross-selling recommendations
+    LaunchedEffect(Unit) {
+        try {
+            val response = NetworkClient.membershipApi.getMembership(userId)
+            if (response.currentPlan == null) {
+                hasActiveMembership = false
+                // Recommending Elite Plan for corporate/event bookings
+                val elitePlan = response.availablePlans.find { it.id == 3 }
+                if (elitePlan != null) {
+                    suggestedPlanId = elitePlan.id
+                    suggestedPlanPrice = elitePlan.price
+                    suggestedPlanCode = "ELITE"
                 }
+            } else {
+                hasActiveMembership = true
             }
-
-            "FAILURE" -> {
-                // SHOW MESSAGE, DO NOT NAVIGATE
-                Toast.makeText(
-                    context,
-                    "Payment failed. Please try again or choose COD.",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-
-            "CANCELLED" -> {
-                Toast.makeText(
-                    context,
-                    "Payment cancelled",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF6F8F6))
-    ) {
+    val membershipPrice = if (includeMembership) suggestedPlanPrice else 0.0
+    val finalAmount = totalAmount + membershipPrice
+    val referenceId = "TXN_BOOK_${bookingId}_" + System.currentTimeMillis()
 
-        // HEADER
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.ArrowBack, null,
-                modifier = Modifier.clickable { onBack() })
-            Spacer(Modifier.weight(1f))
-            Text("Payments", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-        }
-
-        // TOTAL AMOUNT (matches your figma)
-        Card(
-            modifier = Modifier.padding(16.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0FE))
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Total Amount", color = Color.Gray)
-                Text(
-                    "₹%.2f".format(totalAmount),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2563EB)
-                )
-            }
-        }
-
-        // PAYMENT OPTIONS
-        Card(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(18.dp)
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                PaymentOption(
-                    selected = selectedMethod == "UPI",
-                    icon = Icons.Default.QrCode,
-                    title = "UPI (Google Pay / PhonePe)",
-                    onClick = { selectedMethod = "UPI" }
-                )
-                Divider()
-                PaymentOption(
-                    selected = selectedMethod == "COD",
-                    icon = Icons.Default.Money,
-                    title = "Cash on Delivery",
-                    onClick = { selectedMethod = "COD" }
-                )
-            }
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        Button(
-            onClick = {
-                if (selectedMethod == "UPI") {
-                    launchUpiPayment(context, totalAmount)
-                } else {
-                    vm.markPaymentSuccess(
-                        bookingId = bookingId,
-                        method = "COD"
-                    ) { txnId ->
-                        onPaymentSuccess(txnId, "COD")
+    // ActivityResultLauncher for clean UPI payments
+    val upiLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isProcessing = true
+        if (result.resultCode == Activity.RESULT_OK) {
+            val response = result.data?.getStringExtra("response") ?: ""
+            if (response.contains("SUCCESS", true)) {
+                coroutineScope.launch {
+                    try {
+                        if (includeMembership && suggestedPlanId != null) {
+                            // 1. Create a pending transaction on backend for the membership
+                            val subResponse = NetworkClient.membershipApi.subscribeMembership(userId, suggestedPlanId!!)
+                            if (subResponse.success && subResponse.reference_id != null) {
+                                // 2. Verify the payment for the membership
+                                NetworkClient.membershipApi.verifyPayment(subResponse.reference_id, "SUCCESS")
+                            }
+                        }
+                        
+                        // 3. Mark the booking as paid
+                        vm.markPaymentSuccess(bookingId, "UPI") { txnId ->
+                            isProcessing = false
+                            onPaymentSuccess(txnId, "UPI")
+                        }
+                    } catch (e: Exception) {
+                        isProcessing = false
+                        e.printStackTrace()
+                        Toast.makeText(context, "Error verifying transaction: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
-            },
+            } else {
+                isProcessing = false
+                Toast.makeText(context, "Payment failed: $response", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            isProcessing = false
+            Toast.makeText(context, "Payment cancelled", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(30.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                .fillMaxSize()
+                .background(Color(0xFFF6F8F6))
         ) {
-            Text(
-                if (selectedMethod == "UPI") "Pay Now" else "Confirm Order",
-                fontWeight = FontWeight.Bold
-            )
+            // HEADER
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.ArrowBack, null,
+                    modifier = Modifier.clickable(enabled = !isProcessing) { onBack() }
+                )
+                Spacer(Modifier.weight(1f))
+                Text("Payments", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+            }
+
+            // TOTAL AMOUNT
+            Card(
+                modifier = Modifier.padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0FE))
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Total Amount", color = Color.Gray)
+                    Text(
+                        "₹%.2f".format(finalAmount),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2563EB)
+                    )
+                }
+            }
+
+            // MEMBERSHIP BUNDLING RECOMMENDATION CARD
+            if (!hasActiveMembership && suggestedPlanId != null) {
+                Card(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF1E8)),
+                    border = BorderStroke(1.dp, Color(0xFFFF6B00))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Checkbox(
+                            checked = includeMembership,
+                            onCheckedChange = { includeMembership = it },
+                            enabled = !isProcessing,
+                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFFFF6B00))
+                        )
+                        Column {
+                            Text(
+                                text = "Bundle Half-Yearly Elite!",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF6B00),
+                                fontSize = 14.sp
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = "Add for ₹${suggestedPlanPrice.toInt()} and get 20% discount on this booking & all future orders.",
+                                color = Color(0xFF111111),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // PAYMENT OPTIONS
+            Card(
+                modifier = Modifier.padding(16.dp),
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    PaymentOption(
+                        selected = selectedMethod == "UPI",
+                        icon = Icons.Default.QrCode,
+                        title = "UPI (Google Pay / PhonePe)",
+                        onClick = { if (!isProcessing) selectedMethod = "UPI" }
+                    )
+                    HorizontalDivider()
+                    PaymentOption(
+                        selected = selectedMethod == "COD",
+                        icon = Icons.Default.Money,
+                        title = "Cash on Delivery",
+                        onClick = { if (!isProcessing) selectedMethod = "COD" }
+                    )
+                }
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            Button(
+                onClick = {
+                    if (selectedMethod == "UPI") {
+                        isProcessing = true
+                        val intent = PaymentGatewayManager.buildUpiIntent(
+                            amount = finalAmount,
+                            referenceId = referenceId,
+                            planCode = if (includeMembership) suggestedPlanCode else "BOOKING"
+                        )
+                        upiLauncher.launch(intent)
+                    } else {
+                        isProcessing = true
+                        coroutineScope.launch {
+                            try {
+                                if (includeMembership && suggestedPlanId != null) {
+                                    val subResponse = NetworkClient.membershipApi.subscribeMembership(userId, suggestedPlanId!!)
+                                    if (subResponse.success && subResponse.reference_id != null) {
+                                        NetworkClient.membershipApi.verifyPayment(subResponse.reference_id, "SUCCESS")
+                                    }
+                                }
+                                vm.markPaymentSuccess(bookingId, "COD") { txnId ->
+                                    isProcessing = false
+                                    onPaymentSuccess(txnId, "COD")
+                                }
+                            } catch (e: Exception) {
+                                isProcessing = false
+                                e.printStackTrace()
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                },
+                enabled = !isProcessing,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(30.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+            ) {
+                Text(
+                    if (isProcessing) "Processing..." else if (selectedMethod == "UPI") "Pay Now" else "Confirm Order",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Loading indicator
+        if (isProcessing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFFFF6B00))
+            }
         }
     }
 }
 
-
-
-/* ---------------- PAYMENT OPTION ROW ---------------- */
 @Composable
 private fun PaymentOption(
     selected: Boolean,
@@ -178,271 +294,3 @@ private fun PaymentOption(
         Text(title, fontWeight = FontWeight.Medium)
     }
 }
-
-/* ---------------- UPI INTENT ---------------- */
-private fun launchUpiPayment(
-    context: android.content.Context,
-    amount: Double
-) {
-    val uri = Uri.parse(
-        "upi://pay" +
-                "?pa=9566617191@okbizaxis" +
-                "&pn=Floating Flavors" +
-                "&tn=Booking Payment" +
-                "&am=$amount" +
-                "&cu=INR"
-    )
-
-    val intent = Intent(Intent.ACTION_VIEW, uri)
-    (context as Activity).startActivityForResult(intent, 1001)
-//    context.startActivity(intent)
-}
-
-
-
-
-// NORMAL UI PAYMENT CODE
-
-//package com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout
-//
-//import androidx.compose.foundation.background
-//import androidx.compose.foundation.clickable
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.*
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.graphics.vector.ImageVector
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.unit.dp
-//import androidx.compose.ui.unit.sp
-//
-//@Composable
-//fun CheckoutPaymentScreen(
-//    subtotal: Double,
-//    gst: Double,
-//    deliveryFee: Double,
-//    total: Double,
-//    onBack: () -> Unit,
-//    onPay: (PaymentMethod) -> Unit
-//) {
-//
-//    var selectedMethod by remember { mutableStateOf<PaymentMethod?>(null) }
-//
-//    Column(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .background(Color(0xFFF6F8F6))
-//    ) {
-//
-//        /* ---------------- HEADER ---------------- */
-//        Row(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(16.dp),
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Icon(
-//                Icons.Default.ArrowBack,
-//                contentDescription = null,
-//                modifier = Modifier.clickable { onBack() }
-//            )
-//
-//            Spacer(Modifier.width(12.dp))
-//
-//            Text(
-//                "Payments",
-//                fontSize = 20.sp,
-//                fontWeight = FontWeight.Bold
-//            )
-//
-//            Spacer(Modifier.weight(1f))
-//
-//            Row(verticalAlignment = Alignment.CenterVertically) {
-//                Icon(
-//                    Icons.Default.Lock,
-//                    contentDescription = null,
-//                    tint = Color(0xFF16A34A),
-//                    modifier = Modifier.size(16.dp)
-//                )
-//                Spacer(Modifier.width(4.dp))
-//                Text(
-//                    "100% Secure",
-//                    color = Color(0xFF16A34A),
-//                    fontSize = 12.sp,
-//                    fontWeight = FontWeight.Medium
-//                )
-//            }
-//        }
-//
-//        /* ---------------- AMOUNT CARD ---------------- */
-//        Card(
-//            modifier = Modifier
-//                .padding(16.dp)
-//                .fillMaxWidth(),
-//            shape = RoundedCornerShape(18.dp),
-//            colors = CardDefaults.cardColors(
-//                containerColor = Color(0xFFE0EDFF)
-//            )
-//        ) {
-//            Column(Modifier.padding(16.dp)) {
-//
-//                AmountRow("Subtotal", subtotal)
-//                AmountRow("GST (5%)", gst)
-//                AmountRow("Delivery fees", deliveryFee)
-//
-//                Divider(
-//                    Modifier.padding(vertical = 12.dp),
-//                    color = Color(0xFFB6D4FF)
-//                )
-//
-//                Row(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    horizontalArrangement = Arrangement.SpaceBetween,
-//                    verticalAlignment = Alignment.CenterVertically
-//                ) {
-//                    Row(verticalAlignment = Alignment.CenterVertically) {
-//                        Text(
-//                            "Total Amount",
-//                            fontWeight = FontWeight.Bold,
-//                            color = Color(0xFF2563EB)
-//                        )
-//                        Spacer(Modifier.width(4.dp))
-//                        Icon(
-//                            Icons.Default.ExpandLess,
-//                            contentDescription = null,
-//                            tint = Color(0xFF2563EB)
-//                        )
-//                    }
-//
-//                    Text(
-//                        "₹%.2f".format(total),
-//                        fontWeight = FontWeight.Bold,
-//                        fontSize = 18.sp,
-//                        color = Color(0xFF2563EB)
-//                    )
-//                }
-//            }
-//        }
-//
-//        Spacer(Modifier.height(8.dp))
-//
-//        /* ---------------- PAYMENT OPTIONS ---------------- */
-//
-//        PaymentOption(
-//            title = "UPI",
-//            icon = Icons.Default.AccountBalanceWallet,
-//            selected = selectedMethod == PaymentMethod.UPI
-//        ) {
-//            selectedMethod = PaymentMethod.UPI
-//        }
-//
-//        PaymentOption(
-//            title = "Credit / Debit / ATM Card",
-//            icon = Icons.Default.CreditCard,
-//            selected = selectedMethod == PaymentMethod.CARD
-//        ) {
-//            selectedMethod = PaymentMethod.CARD
-//        }
-//
-//        Spacer(Modifier.height(8.dp))
-//
-//        PaymentOption(
-//            title = "Cash on Delivery",
-//            icon = Icons.Default.Money,
-//            selected = selectedMethod == PaymentMethod.COD
-//        ) {
-//            selectedMethod = PaymentMethod.COD
-//        }
-//
-//        Spacer(Modifier.weight(1f))
-//
-//        /* ---------------- PAY BUTTON ---------------- */
-//        Button(
-//            onClick = {
-//                selectedMethod?.let { onPay(it) }
-//            },
-//            enabled = selectedMethod != null,
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(16.dp)
-//                .height(56.dp),
-//            shape = RoundedCornerShape(30.dp),
-//            colors = ButtonDefaults.buttonColors(
-//                containerColor = Color(0xFFFACC15),
-//                disabledContainerColor = Color(0xFFE5E7EB)
-//            )
-//        ) {
-//            Text(
-//                "Continue",
-//                fontWeight = FontWeight.Bold,
-//                color = Color.Black
-//            )
-//        }
-//    }
-//}
-//
-///* ---------------- SMALL COMPONENTS ---------------- */
-//
-//@Composable
-//private fun AmountRow(label: String, value: Double) {
-//    Row(
-//        modifier = Modifier.fillMaxWidth(),
-//        horizontalArrangement = Arrangement.SpaceBetween
-//    ) {
-//        Text(label)
-//        Text("₹%.2f".format(value))
-//    }
-//}
-//
-//@Composable
-//private fun PaymentOption(
-//    title: String,
-//    icon: ImageVector,
-//    selected: Boolean,
-//    onClick: () -> Unit
-//) {
-//    Card(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(horizontal = 16.dp)
-//            .clickable { onClick() },
-//        shape = RoundedCornerShape(14.dp),
-//        colors = CardDefaults.cardColors(
-//            containerColor = Color.White
-//        )
-//    ) {
-//        Row(
-//            modifier = Modifier.padding(16.dp),
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Icon(
-//                icon,
-//                contentDescription = null,
-//                tint = Color.Gray
-//            )
-//            Spacer(Modifier.width(12.dp))
-//            Text(
-//                title,
-//                fontWeight = FontWeight.SemiBold,
-//                modifier = Modifier.weight(1f)
-//            )
-//            RadioButton(
-//                selected = selected,
-//                onClick = onClick
-//            )
-//        }
-//    }
-//}
-//
-///* ---------------- PAYMENT TYPE ---------------- */
-//
-//enum class PaymentMethod {
-//    UPI,
-//    CARD,
-//    COD
-//}

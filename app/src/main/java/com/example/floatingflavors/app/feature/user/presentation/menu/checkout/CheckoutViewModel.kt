@@ -29,17 +29,22 @@ class CheckoutViewModel(
     val uiState: StateFlow<CheckoutUiState> = _uiState
 
     val selectedAddressId = MutableStateFlow<Int?>(null)
+    val payment = MutableStateFlow("upi")
+
+    // Membership cross-selling state
+    val suggestedPlan = MutableStateFlow<com.example.floatingflavors.app.feature.user.data.membership.dto.MembershipPlanDto?>(null)
+    val includeMembership = MutableStateFlow(false)
 
     // Independent Address List for this screen
     private val _addresses = MutableStateFlow<List<com.example.floatingflavors.app.feature.user.data.settings.dto.AddressDto>>(emptyList())
     val addresses: StateFlow<List<com.example.floatingflavors.app.feature.user.data.settings.dto.AddressDto>> = _addresses
 
-    val payment = MutableStateFlow("upi")
-
     // ✅ NOW ACCEPTS userId
     fun load(userId: Int) {
         viewModelScope.launch {
             _uiState.value = CheckoutUiState.Loading
+            suggestedPlan.value = null
+            includeMembership.value = false
             
             // 1. Load Checkout Summary
             val summaryJob = launch {
@@ -64,14 +69,6 @@ class CheckoutViewModel(
             // 2. Load Addresses (Parallel)
             val addressJob = launch {
                 try {
-                    // We need AddressRepository here. 
-                    // Since I cannot change constructor easily without breaking DI elsewhere if simpler setup is used,
-                    // I will assume I can instantiate it or better, add it to constructor.
-                    // Ideally: private val addressRepo: AddressRepository
-                    // For now, I'll instantiate it directly if possible or use NetworkClient if needed, 
-                    // BUT correct way is constructor.
-                    // Given the user instructions "don't affect existing logic", I'll add it to constructor as default = AddressRepository()
-                    
                     val addressRepo = com.example.floatingflavors.app.feature.user.data.settings.AddressRepository(
                         com.example.floatingflavors.app.core.network.NetworkClient.addressApi
                     )
@@ -94,6 +91,25 @@ class CheckoutViewModel(
             }
             
             joinAll(summaryJob, addressJob)
+
+            // 3. Load Membership dynamically to check for cross-sell recommendations
+            try {
+                val response = com.example.floatingflavors.app.core.network.NetworkClient.membershipApi.getMembership(userId)
+                if (response.currentPlan == null) {
+                    val currentState = _uiState.value
+                    if (currentState is CheckoutUiState.Success) {
+                        val cartTotal = currentState.total
+                        val recommended = if (cartTotal > 1500) {
+                            response.availablePlans.find { it.id == 2 } // Quarterly Plan
+                        } else {
+                            response.availablePlans.find { it.id == 1 } // Monthly Plan
+                        }
+                        suggestedPlan.value = recommended
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -110,7 +126,9 @@ class CheckoutViewModel(
                 val res = repo.placeOrder(
                     userId = userId,
                     payment = payment.value,
-                    addressId = addressId
+                    addressId = addressId,
+                    includeMembership = includeMembership.value,
+                    membershipPlanId = suggestedPlan.value?.id ?: 0
                 )
 
                 if (res.isSuccessful && res.body()?.success == true) {
@@ -136,11 +154,6 @@ class CheckoutViewModel(
         selectedAddressId.value = addressId
     }
 }
-
-
-
-
-
 
 //package com.example.floatingflavors.app.feature.user.presentation.menu.checkout
 //

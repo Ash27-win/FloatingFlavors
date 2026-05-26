@@ -110,7 +110,7 @@ class WebSocketHeartbeatEngine(
         scope.launch {
             try {
                 isPongPending = true
-                Log.d(TAG, "→ PING sent.")
+                // Log.d(TAG, "→ PING sent.")
                 onPingSend()
 
                 // Start a timeout watchdog for this PONG
@@ -124,7 +124,7 @@ class WebSocketHeartbeatEngine(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "PING send failed: ${e.message}")
+                // Log.e(TAG, "PING send failed: ${e.message}")
                 handleConnectionDead()
             }
         }
@@ -140,7 +140,7 @@ class WebSocketHeartbeatEngine(
 
         // Schedule a reconnect attempt with exponential backoff
         scope.launch {
-            Log.i(TAG, "Attempting reconnect in ${reconnectBackoff / 1000}s...")
+            // Log.i(TAG, "Attempting reconnect in ${reconnectBackoff / 1000}s...")
             delay(reconnectBackoff)
             reconnectBackoff = (reconnectBackoff * 2).coerceAtMost(MAX_BACKOFF_MS)
 

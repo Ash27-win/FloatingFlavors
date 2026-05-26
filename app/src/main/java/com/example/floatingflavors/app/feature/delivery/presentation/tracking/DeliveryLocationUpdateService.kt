@@ -345,7 +345,7 @@ class DeliveryLocationUpdateService : Service() {
                 try {
                     val pending = db.bufferedLocationDao().getPendingLocations()
                     if (pending.isNotEmpty()) {
-                        Log.d("DELIVERY_GPS", "🔄 Syncing ${pending.size} offline locations")
+                        // Log.d("DELIVERY_GPS", "🔄 Syncing ${pending.size} offline locations")
                         // In an enterprise app, we'd batch upload these.
                         // For now we'll upload the latest and clear, to catch up the dispatcher.
                         val latest = pending.last()
@@ -358,7 +358,7 @@ class DeliveryLocationUpdateService : Service() {
                         db.bufferedLocationDao().deleteLocations(pending.map { it.id })
                     }
                 } catch (e: Exception) {
-                    Log.e("DELIVERY_GPS", "❌ Offline Sync Failed", e)
+                    // Log.e("DELIVERY_GPS", "❌ Offline Sync Failed", e)
                 }
             }
         }

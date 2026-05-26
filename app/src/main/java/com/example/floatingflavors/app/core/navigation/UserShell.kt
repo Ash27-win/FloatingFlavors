@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
@@ -150,57 +151,80 @@ fun UserShell(
     Scaffold(
         bottomBar = {
             if (!hideBottomBar) {
-                NavigationBar {
+                Surface(
+                    tonalElevation = 0.dp,
+                    shadowElevation = 8.dp,
+                    color = Color.White
+                ) {
+                    NavigationBar(
+                        containerColor = Color.White,
+                        tonalElevation = 0.dp
+                    ) {
+                        val activeColor = Color(0xFFFF6B00)
+                        val inactiveColor = Color(0xFF777777)
+                        val navItemColors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = activeColor,
+                            selectedTextColor = activeColor,
+                            unselectedIconColor = inactiveColor,
+                            unselectedTextColor = inactiveColor,
+                            indicatorColor = Color(0xFFFFF1E8)
+                        )
 
-                    NavigationBarItem(
-                        selected = currentRoute == Screen.UserHome.route,
-                        onClick = {
-                            navController.navigate(Screen.UserHome.route) {
-                                popUpTo(Screen.UserHome.route)
-                                launchSingleTop = true
-                            }
-                        },
-                        icon = { Icon(Icons.Default.Home, null) },
-                        label = { Text("Home") }
-                    )
+                        NavigationBarItem(
+                            selected = currentRoute == Screen.UserHome.route,
+                            onClick = {
+                                navController.navigate(Screen.UserHome.route) {
+                                    popUpTo(Screen.UserHome.route)
+                                    launchSingleTop = true
+                                }
+                            },
+                            icon = { Icon(Icons.Default.Home, null) },
+                            label = { Text("Home") },
+                            colors = navItemColors
+                        )
 
-                    NavigationBarItem(
-                        selected = currentRoute == Screen.UserMenuGrid.route,
-                        onClick = {
-                            navController.navigate(Screen.UserMenuGrid.route) {
-                                launchSingleTop = true
-                            }
-                        },
-                        icon = { Icon(Icons.Default.RestaurantMenu, null) },
-                        label = { Text("Menu") }
-                    )
+                        NavigationBarItem(
+                            selected = currentRoute == Screen.UserMenuGrid.route,
+                            onClick = {
+                                navController.navigate(Screen.UserMenuGrid.route) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            icon = { Icon(Icons.Default.RestaurantMenu, null) },
+                            label = { Text("Menu") },
+                            colors = navItemColors
+                        )
 
-                    NavigationBarItem(
-                        selected = currentRoute == Screen.UserBooking.route,
-                        onClick = {
-                            navController.navigate(Screen.UserBooking.route)
-                        },
-                        icon = { Icon(Icons.Default.EventAvailable, null) },
-                        label = { Text("Booking") }
-                    )
+                        NavigationBarItem(
+                            selected = currentRoute == Screen.UserBooking.route,
+                            onClick = {
+                                navController.navigate(Screen.UserBooking.route)
+                            },
+                            icon = { Icon(Icons.Default.EventAvailable, null) },
+                            label = { Text("Booking") },
+                            colors = navItemColors
+                        )
 
-                    NavigationBarItem(
-                        selected = currentRoute == Screen.UserOrders.route,
-                        onClick = {
-                            navController.navigate(Screen.UserOrders.route)
-                        },
-                        icon = { Icon(Icons.Default.ReceiptLong, null) },
-                        label = { Text("Orders") }
-                    )
+                        NavigationBarItem(
+                            selected = currentRoute == Screen.UserOrders.route,
+                            onClick = {
+                                navController.navigate(Screen.UserOrders.route)
+                            },
+                            icon = { Icon(Icons.Default.ReceiptLong, null) },
+                            label = { Text("Orders") },
+                            colors = navItemColors
+                        )
 
-                    NavigationBarItem(
-                        selected = currentRoute == Screen.UserProfile.route,
-                        onClick = {
-                            navController.navigate(Screen.UserProfile.route)
-                        },
-                        icon = { Icon(Icons.Default.Settings, null) },
-                        label = { Text("Settings") }
-                    )
+                        NavigationBarItem(
+                            selected = currentRoute == Screen.UserProfile.route,
+                            onClick = {
+                                navController.navigate(Screen.UserProfile.route)
+                            },
+                            icon = { Icon(Icons.Default.Settings, null) },
+                            label = { Text("Settings") },
+                            colors = navItemColors
+                        )
+                    }
                 }
             }
         }

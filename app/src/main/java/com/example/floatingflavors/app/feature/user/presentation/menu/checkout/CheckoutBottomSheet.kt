@@ -1,5 +1,6 @@
 package com.example.floatingflavors.app.feature.user.presentation.menu.checkout
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,8 @@ fun CheckoutBottomSheet(
     val payment by vm.payment.collectAsState()
     val addresses by vm.addresses.collectAsState()
     val selectedAddressId by vm.selectedAddressId.collectAsState()
+    val suggestedPlan by vm.suggestedPlan.collectAsState()
+    val includeMembership by vm.includeMembership.collectAsState()
 
     LaunchedEffect(Unit) {
         vm.load(userId)
@@ -60,6 +63,8 @@ fun CheckoutBottomSheet(
 
                 is CheckoutUiState.Success -> {
                     val data = state as CheckoutUiState.Success
+                    val membershipPrice = if (includeMembership) (suggestedPlan?.price?.toInt() ?: 0) else 0
+                    val finalTotal = data.total + membershipPrice
 
                     androidx.compose.foundation.lazy.LazyColumn(
                         modifier = Modifier.weight(1f),
@@ -89,6 +94,45 @@ fun CheckoutBottomSheet(
                             }
                         }
 
+                        // 🔹 CROSS-SELL MEMBERSHIP RECOMMENDATION CARD
+                        suggestedPlan?.let { plan ->
+                            item {
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF1E8)),
+                                    border = BorderStroke(1.dp, Color(0xFFFF6B00)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Checkbox(
+                                            checked = includeMembership,
+                                            onCheckedChange = { vm.includeMembership.value = it },
+                                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFFFF6B00))
+                                        )
+                                        Column {
+                                            Text(
+                                                text = "Join ${plan.name} & Save!",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFFF6B00),
+                                                fontSize = 14.sp
+                                            )
+                                            Spacer(Modifier.height(2.dp))
+                                            Text(
+                                                text = "Add for ₹${plan.price.toInt()} to get ${plan.discount_percent}% off on this order & all future orders.",
+                                                color = Color(0xFF111111),
+                                                fontSize = 12.sp,
+                                                lineHeight = 16.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         item {
                            HorizontalDivider() 
                         }
@@ -102,13 +146,20 @@ fun CheckoutBottomSheet(
                                     Text("₹${it.price}", fontWeight = FontWeight.Bold)
                                 }
                             }
+                            // Show membership item in order summary list if checked
+                            if (includeMembership && suggestedPlan != null) {
+                                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                    Text("${suggestedPlan!!.name} (Membership)", modifier = Modifier.weight(1f))
+                                    Text("₹${suggestedPlan!!.price.toInt()}", fontWeight = FontWeight.Bold)
+                                }
+                            }
                             Spacer(Modifier.height(8.dp))
                             HorizontalDivider()
                             Spacer(Modifier.height(8.dp))
                             Row(Modifier.fillMaxWidth()) {
                                 Text("Total Amount", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 Spacer(Modifier.weight(1f))
-                                Text("₹${data.total}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF2E63F5))
+                                Text("₹${finalTotal}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF2E63F5))
                             }
                         }
 
@@ -136,7 +187,7 @@ fun CheckoutBottomSheet(
                         if (selectedAddressId == null) {
                              Text("Select Address First")
                         } else {
-                             Text("Place Order - ₹${data.total}", fontWeight = FontWeight.Bold)
+                             Text("Place Order - ₹${finalTotal}", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

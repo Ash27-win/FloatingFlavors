@@ -9,8 +9,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.floatingflavors.app.core.network.NetworkClient
 import com.example.floatingflavors.app.feature.user.presentation.booking.booking_checkout.components.CheckoutStepper
 
 @Composable
@@ -31,8 +37,16 @@ fun CheckoutSummaryScreen(
     onChangeAddress: () -> Unit,
     onContinue: () -> Unit
 ) {
+    var hasActiveMembership by remember { mutableStateOf(true) }
+
     LaunchedEffect(Unit) {
         vm.load(userId, bookingId, addressId)
+        try {
+            val response = NetworkClient.membershipApi.getMembership(userId)
+            hasActiveMembership = response.currentPlan != null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     val state = vm.uiState
@@ -178,6 +192,32 @@ fun CheckoutSummaryScreen(
                     quantity = item.quantity,
                     price = item.total
                 )
+            }
+
+            /* ---------------- PROMO TIP CARD ---------------- */
+            if (!hasActiveMembership) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF1E8)),
+                        border = BorderStroke(1.dp, Color(0xFFFF6B00))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "💡 Tip: You can save 20% on this booking by joining the Elite membership on the payment screen!",
+                                color = Color(0xFF111111),
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
 
             /* ---------------- PRICE DETAILS ---------------- */
